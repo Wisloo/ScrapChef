@@ -1,28 +1,33 @@
 import 'package:flutter/foundation.dart';
 
 import '../models.dart';
-import '../services/mock_classifier_service.dart';
+import '../services/mock_real_classifier.dart';
 import '../services/recipe_service.dart';
 import '../services/sound_service.dart';
 
 class AppState extends ChangeNotifier {
   AppState({
-    required MockClassifierService classifierService,
+    required MockRealClassifier classifierService,
     required RecipeService recipeService,
   })  : _classifierService = classifierService,
         _recipeService = recipeService {
+    // Initialize the classifier
+    _initializeClassifier();
     // Start with empty inventory to show cute mascots!
     // _seedDemoInventory();
   }
 
-  final MockClassifierService _classifierService;
+  final MockRealClassifier _classifierService;
+
+  // Public getter to access classifier from screens
+  MockRealClassifier get classifierService => _classifierService;
   final RecipeService _recipeService;
 
   final List<ScrapItem> _inventory = <ScrapItem>[];
   final List<String> _latestBatchLabels = <String>[];
   ScanOutcome? _lastOutcome;
 
-  List<String> get supportedLabels => MockClassifierService.supportedLabels;
+  List<String> get supportedLabels => _classifierService.labels ?? [];
 
   List<ScrapItem> get inventory => List.unmodifiable(_inventory);
 
@@ -93,7 +98,14 @@ class AppState extends ChangeNotifier {
   }
 
   void simulateScan(String sampleLabel) {
-    final outcome = _classifierService.classifySample(sampleLabel);
+    // Create a mock outcome for testing since we removed classifySample
+    final outcome = ScanOutcome(
+      predictedLabel: sampleLabel,
+      confidence: 0.95,
+      recommendedAction: 'Test classification completed',
+      requiresReview: false,
+      note: 'Mock result for testing',
+    );
     _lastOutcome = outcome;
 
     if (!outcome.requiresReview) {
@@ -157,6 +169,15 @@ class AppState extends ChangeNotifier {
     SoundService.playSuccess();
 
     notifyListeners();
+  }
+
+  Future<void> _initializeClassifier() async {
+    try {
+      await _classifierService.initialize();
+      print('FoodClassifier initialized successfully');
+    } catch (e) {
+      print('Failed to initialize FoodClassifier: $e');
+    }
   }
 
   void _logItem({

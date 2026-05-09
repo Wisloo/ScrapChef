@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'screens/home_screen.dart';
-import 'services/mock_classifier_service.dart';
+import 'services/test_classifier.dart';
+import 'services/mock_real_classifier.dart';
 import 'services/recipe_service.dart';
 import 'state/app_state.dart';
 
@@ -17,7 +18,7 @@ class ScrapChefApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = AppState(
-      classifierService: MockClassifierService(),
+      classifierService: MockRealClassifier(),
       recipeService: RecipeService(),
     );
 
@@ -105,6 +106,9 @@ class ScrapChefApp extends StatelessWidget {
         ),
       ),
       home: HomeScreen(appState: appState),
+      routes: {
+        '/test': (context) => const TestClassifierScreen(),
+      },
     );
   }
 }

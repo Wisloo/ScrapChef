@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.scrap_chef"
     compileSdk = flutter.compileSdkVersion
-    // ndkVersion = flutter.ndkVersion  // Commented out: not needed for pure Dart app
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

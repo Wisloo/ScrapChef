@@ -47,6 +47,42 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   Future<void> _showLabelSelector() async {
+    // Try to classify the image first
+    if (_selectedImage != null) {
+      try {
+        final result = await widget.appState.classifierService.classifyImage(File(_selectedImage!.path));
+        
+        // Show result to user for confirmation
+        final confirmed = await _showClassificationResult(result);
+        
+        if (confirmed) {
+          if (_batchMode) {
+            setState(() {
+              _batchLabels.add(result.topPrediction.label);
+              _selectedImage = null;
+            });
+            HapticFeedback.mediumImpact();
+          } else {
+            widget.appState.confirmManualClassification(
+              result.topPrediction.label,
+              confidence: result.topPrediction.confidence,
+            );
+            HapticFeedback.mediumImpact();
+            if (mounted) {
+              Navigator.of(context).pop(widget.appState.lastOutcome);
+            }
+          }
+        }
+      } catch (e) {
+        // If classification fails, fall back to manual selection
+        _showManualLabelSelector();
+      }
+    } else {
+      _showManualLabelSelector();
+    }
+  }
+
+  Future<void> _showManualLabelSelector() async {
     final selected = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -62,13 +98,185 @@ class _ScanScreenState extends State<ScanScreen> {
         });
         HapticFeedback.mediumImpact();
       } else {
-        widget.appState.simulateScan(selected);
+        widget.appState.confirmManualClassification(
+          selected,
+          confidence: 1.0,
+        );
         HapticFeedback.mediumImpact();
         if (mounted) {
           Navigator.of(context).pop(widget.appState.lastOutcome);
         }
       }
     }
+  }
+
+  Future<bool> _showClassificationResult(dynamic result) async {
+    return await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _showClassificationResultDialog(result),
+    ) ?? false;
+  }
+
+  Widget _showClassificationResultDialog(dynamic result) {
+    final prediction = result.topPrediction;
+    final isConfident = prediction.confidence > 0.7;
+    
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: kCardBg,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: kDeepBrown.withAlpha(30),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isConfident ? kSage : kLightTerracotta,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'AI Classification Result',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: kDeepBrown,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isConfident ? kSage.withAlpha(20) : kLightTerracotta.withAlpha(20),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isConfident ? kSage : kLightTerracotta,
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      prediction.label,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: kDeepBrown,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Confidence: ${(prediction.confidence * 100).toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isConfident ? kSage : kTerracotta,
+                      ),
+                    ),
+                    if (!isConfident) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        'Low confidence - please verify',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: kTerracotta,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pop(false),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: kCardBg.withAlpha(230),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: kDeepBrown.withAlpha(60)),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.edit, color: Color.fromARGB(200, 61, 41, 20), size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Manual Select',
+                              style: TextStyle(
+                                color: Color.fromARGB(200, 61, 41, 20),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pop(true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: isConfident ? kSage : kTerracotta,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check, color: Colors.white, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Accept',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _showBatchPreview() async {
@@ -765,12 +973,7 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
           ],
         ),
         child: Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -786,9 +989,9 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'What did you capture?',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   color: kDeepBrown,
@@ -797,20 +1000,22 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
               const SizedBox(height: 6),
               Text(
                 'Select the food scrap type',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 15,
                   color: kDeepBrown.withAlpha(140),
+                  height: 1.4,
                 ),
               ),
               const SizedBox(height: 20),
-              Flexible(
+              Expanded(
                 child: GridView.builder(
                   shrinkWrap: true,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 3,
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 2.5,
                   ),
                   itemCount: widget.labels.length,
                   itemBuilder: (context, index) {
@@ -819,32 +1024,26 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
 
                     return GestureDetector(
                       onTap: () {
-                        HapticFeedback.selectionClick();
                         setState(() => selectedLabel = label);
+                        HapticFeedback.selectionClick();
                       },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSelected ? kTerracotta : kCream,
-                          borderRadius: BorderRadius.circular(14),
+                          color: isSelected ? kSage : kCardBg,
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected
-                                ? kTerracotta
-                                : kDeepBrown.withAlpha(30),
+                            color: isSelected ? kSage : kDeepBrown.withAlpha(30),
                             width: isSelected ? 2 : 1,
                           ),
                         ),
-                        alignment: Alignment.center,
                         child: Text(
                           label,
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isSelected
-                                ? Colors.white
-                                : kDeepBrown.withAlpha(180),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected ? Colors.white : kDeepBrown,
                           ),
                         ),
                       ),
@@ -853,36 +1052,78 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
                 ),
               ),
               const SizedBox(height: 20),
-              GestureDetector(
-                onTap: selectedLabel == null
-                    ? null
-                    : () {
-                        HapticFeedback.mediumImpact();
-                        Navigator.of(context).pop(selectedLabel);
-                      },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  decoration: BoxDecoration(
-                    color: selectedLabel == null
-                        ? kDeepBrown.withAlpha(30)
-                        : kTerracotta,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    'Confirm Scrap',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: selectedLabel == null
-                          ? kDeepBrown.withAlpha(100)
-                          : Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: kCardBg.withAlpha(230),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: kDeepBrown.withAlpha(60)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.close,
+                              color: kDeepBrown.withAlpha(200),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Cancel',
+                              style: TextStyle(
+                                color: kDeepBrown.withAlpha(200),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: selectedLabel != null
+                          ? () {
+                              Navigator.of(context).pop(selectedLabel);
+                              HapticFeedback.mediumImpact();
+                            }
+                          : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: selectedLabel != null ? kSage : kCardBg.withAlpha(230),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: selectedLabel != null ? kSage : kDeepBrown.withAlpha(60),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.check, color: Colors.white, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Confirm',
+                              style: TextStyle(
+                                color: selectedLabel != null ? Colors.white : kDeepBrown.withAlpha(200),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
             ],
           ),
         ),
