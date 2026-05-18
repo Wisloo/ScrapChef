@@ -174,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextButton(
                       onPressed: () {
                         _emailController.text = 'demo@scrapchef.local';
-                        _passwordController.text = 'demo';
+                        _passwordController.text = 'demo123456';
                       },
                       child: const Text('Use demo login'),
                     ),
