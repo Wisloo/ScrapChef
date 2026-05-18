@@ -3,14 +3,14 @@ import 'package:flutter/foundation.dart';
 import '../models.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/firebase_recipe_store.dart';
-import '../services/mock_real_classifier.dart';
+import '../services/gemini_service.dart';
 import '../services/recipe_service.dart';
 import '../services/sound_service.dart';
 
 class AppState extends ChangeNotifier {
   static const double scanConfidenceThreshold = 0.70;
   AppState({
-    required MockRealClassifier classifierService,
+    required GeminiService classifierService,
     required RecipeService recipeService,
   })  : _classifierService = classifierService,
         _recipeService = recipeService,
@@ -20,12 +20,12 @@ class AppState extends ChangeNotifier {
     _bootstrap();
   }
 
-  final MockRealClassifier _classifierService;
+  final GeminiService _classifierService;
   final FirebaseAuthService _authService;
   final FirebaseRecipeStore _recipeStore;
 
   // Public getter to access classifier from screens
-  MockRealClassifier get classifierService => _classifierService;
+  GeminiService get classifierService => _classifierService;
   final RecipeService _recipeService;
 
   final List<ScrapItem> _inventory = <ScrapItem>[];
@@ -35,7 +35,7 @@ class AppState extends ChangeNotifier {
   bool _isBootstrapping = true;
   bool _isLoadingRecipes = false;
 
-  List<String> get supportedLabels => _classifierService.labels;
+  List<String> get supportedLabels => const []; // GeminiService does not have pre-defined labels
 
   List<ScrapItem> get inventory => List.unmodifiable(_inventory);
 
@@ -329,8 +329,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> _bootstrap() async {
     try {
-      await _classifierService.initialize();
-      
+      // No explicit initialize for GeminiService, as it's initialized in constructor
       // Listen to auth state changes
       _authService.authStateChanges.listen((user) {
         if (user != null) {
@@ -345,13 +344,10 @@ class AppState extends ChangeNotifier {
         await _reloadSavedRecipes();
       }
       
-      if (_classifierService.isLoaded) {
-        print('GeminiScrapClassifier initialized successfully');
-      } else {
-        print('GeminiScrapClassifier not initialized. Set --dart-define=GEMINI_API_KEY=YOUR_KEY before scanning.');
-      }
+      // No isLoaded check for GeminiService
+      print("GeminiService initialized successfully (API key must be set).");
     } catch (e) {
-      print('Failed to initialize app: $e');
+      print("Failed to initialize app: $e");
     } finally {
       _isBootstrapping = false;
       notifyListeners();

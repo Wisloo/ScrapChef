@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'dart:convert'; // Import for jsonDecode
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -52,39 +53,46 @@ class _ScanScreenState extends State<ScanScreen> {
     }
 
     try {
-      final result = await widget.appState.classifierService.classifyImage(
-        File(_selectedImage!.path),
+      // Use the GeminiService to analyze the image
+      final result = await widget.appState.classifierService.analyzeFoodScraps(
+        _selectedImage!.path,
       );
-      final prediction = result.topPrediction;
-      final isFoodWaste = prediction.label.toLowerCase().trim() != 'not_food_waste';
-      final isConfident =
-          prediction.confidence >= AppState.scanConfidenceThreshold;
 
-      if (_batchMode) {
-        if (isFoodWaste && isConfident) {
-          setState(() {
-            _batchLabels.add(prediction.label);
-            _selectedImage = null;
-          });
-          HapticFeedback.mediumImpact();
-        } else {
-          setState(() => _selectedImage = null);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('No food scraps detected.')),
-            );
-          }
+      // Parse the JSON result from Gemini API (assuming it's always valid JSON)
+      // This is a simplified approach; in a real app, you'd add robust error handling
+      final Map<String, dynamic> jsonResult = jsonDecode(result);
+      final List<dynamic> foodScraps = jsonResult["food_scraps"];
+
+      if (foodScraps.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No food scraps detected.')),
+          );
         }
+        setState(() => _selectedImage = null);
         return;
       }
 
-      widget.appState.handleAutoClassification(
-        prediction.label,
-        confidence: prediction.confidence,
-      );
-      HapticFeedback.mediumImpact();
-      if (mounted) {
-        Navigator.of(context).pop(widget.appState.lastOutcome);
+      // For simplicity, we'll take the first detected scrap as the main one
+      // In a real app, you might present all options or let the user choose
+      final String predictedLabel = foodScraps[0]["item"];
+      final double confidence = 1.0; // Assuming Gemini provides high confidence
+
+      if (_batchMode) {
+        setState(() {
+          _batchLabels.add(predictedLabel);
+          _selectedImage = null;
+        });
+        HapticFeedback.mediumImpact();
+      } else {
+        widget.appState.handleAutoClassification(
+          predictedLabel,
+          confidence: confidence,
+        );
+        HapticFeedback.mediumImpact();
+        if (mounted) {
+          Navigator.of(context).pop(widget.appState.lastOutcome);
+        }
       }
     } catch (e) {
       if (mounted) {

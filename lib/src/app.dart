@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
-import 'services/mock_real_classifier.dart';
+import 'services/gemini_service.dart'; // Import the new GeminiService
 import 'services/recipe_service.dart';
 import 'state/app_state.dart';
 
@@ -27,7 +27,7 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
   void initState() {
     super.initState();
     appState = AppState(
-      classifierService: MockRealClassifier(),
+      classifierService: GeminiService(), // Use GeminiService here
       recipeService: RecipeService(),
     );
   }
