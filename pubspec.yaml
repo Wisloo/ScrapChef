@@ -11,7 +11,6 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   image_picker: ^1.0.0
-  tflite_flutter: ^0.12.1
   image: ^4.0.17
   path_provider: ^2.1.1
   google_fonts: ^6.2.1
@@ -27,8 +26,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/models/food_classifier_binary.tflite
-    - assets/models/class_names_binary.txt
-    - assets/models/food_classifier_full.tflite
-    - assets/models/class_names_full.txt
