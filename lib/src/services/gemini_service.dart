@@ -8,7 +8,7 @@ class GeminiService {
 
   GeminiService() : _model = GenerativeModel(
           model: 'gemini-2.5-flash', // Use gemini-2.5-flash for multimodal tasks
-          apiKey: 'AIzaSyCWlCd9hagnq-80sMcC2aMdc45R-DyO0S4', // Replace with your actual API key
+          apiKey: const String.fromEnvironment('GEMINI_API_KEY'), // Replace with your actual API key
         );
 
   Future<String> analyzeFoodScraps(String imagePath) async {

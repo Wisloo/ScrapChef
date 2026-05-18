@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "545739297550",
+    "project_id": "scrapchef-bf262",
+    "storage_bucket": "scrapchef-bf262.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:545739297550:android:3f45b8552b86dc41f7bd5f",
+        "android_client_info": {
+          "package_name": "com.example.scrap_chef"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_kAOO0qWGBNkCMr35wcs4e-nW3GQrEBo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
