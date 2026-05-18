@@ -12,14 +12,14 @@ import 'settings_screen.dart';
 import 'splash_screen.dart';
 
 // Warm earthy solid color palette
-const Color kCream = Color(0xFFFAF7F2);
-const Color kTerracotta = Color(0xFFC17A4A);
-const Color kSage = Color(0xFF7A9E7E);
-const Color kDeepBrown = Color(0xFF3D2914);
-const Color kWarmBrown = Color(0xFF8B6914);
-const Color kCardBg = Colors.white;
-const Color kLightSage = Color(0xFFE8F0E8);
-const Color kLightTerracotta = Color(0xFFF5E6DC);
+const Color kCream = Color(0xFFF6F1E8);
+const Color kTerracotta = Color(0xFFB86137);
+const Color kSage = Color(0xFF58765C);
+const Color kDeepBrown = Color(0xFF2D1F16);
+const Color kWarmBrown = Color(0xFF7B5A2A);
+const Color kCardBg = Color(0xFFFDFBF7);
+const Color kLightSage = Color(0xFFE5EFE4);
+const Color kLightTerracotta = Color(0xFFF3E1D3);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.appState});
@@ -102,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen>
     HapticFeedback.mediumImpact();
     Navigator.of(context).push(
       SlideUpPageRoute(
-        builder: (_) => const SettingsScreen(),
+        builder: (_) => SettingsScreen(appState: widget.appState),
       ),
     );
   }
@@ -139,142 +139,153 @@ class _HomeScreenState extends State<HomeScreen>
           backgroundColor: kTerracotta,
           child: const Icon(Icons.help_outline, color: Colors.white),
         ),
-        body: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              // Settings button in header
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 40, 16, 0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      GestureDetector(
-                        onTap: _openSettings,
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: kCardBg,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: kDeepBrown.withAlpha(15),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.settings,
-                            color: kDeepBrown,
-                            size: 22,
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFFF7F2E8),
+                Color(0xFFFDFBF7),
+                Color(0xFFF3EEE4),
+              ],
+            ),
+          ),
+          child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 40, 16, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        GestureDetector(
+                          onTap: _openSettings,
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: kCardBg,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: kDeepBrown.withAlpha(15),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.settings,
+                              color: kDeepBrown,
+                              size: 22,
+                            ),
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: kCardBg,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kDeepBrown.withAlpha(20),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: _HeroHeader(
+                      itemsLogged: itemsLogged,
+                      estimatedSavings: estimatedSavings,
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _ActionPanel(
+                      onScan: _openScanFlow,
+                      onManualAdd: _addManualItem,
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: kCardBg,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kDeepBrown.withAlpha(15),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: TabBar(
+                      indicator: BoxDecoration(
+                        color: kTerracotta,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              // Hero Header
-              SliverToBoxAdapter(
-                child: Container(
-                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: kCardBg,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: kDeepBrown.withAlpha(20),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: kDeepBrown.withAlpha(160),
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
                       ),
-                    ],
-                  ),
-                  child: _HeroHeader(
-                    itemsLogged: itemsLogged,
-                    estimatedSavings: estimatedSavings,
-                  ),
-                ),
-              ),
-              // Action Buttons
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _ActionPanel(
-                    onScan: _openScanFlow,
-                    onManualAdd: _addManualItem,
-                  ),
-                ),
-              ),
-              // Tab Bar
-              SliverToBoxAdapter(
-                child: Container(
-                  margin: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: kCardBg,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: kDeepBrown.withAlpha(15),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
                       ),
-                    ],
-                  ),
-                  child: TabBar(
-                    indicator: BoxDecoration(
-                      color: kTerracotta,
-                      borderRadius: BorderRadius.circular(12),
+                      dividerColor: Colors.transparent,
+                      tabs: const [
+                        Tab(text: 'Scan'),
+                        Tab(text: 'Bin'),
+                        Tab(text: 'Recipes'),
+                      ],
                     ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    labelColor: Colors.white,
-                    unselectedLabelColor: kDeepBrown.withAlpha(160),
-                    labelStyle: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13,
-                    ),
-                    dividerColor: Colors.transparent,
-                    tabs: const [
-                      Tab(text: 'Scan'),
-                      Tab(text: 'Bin'),
-                      Tab(text: 'Recipes'),
-                    ],
                   ),
                 ),
-              ),
-            ];
-          },
-          body: TabBarView(
-            children: [
-              _ScanTab(
-                outcome: outcome,
-                itemsLogged: itemsLogged,
-                onScan: _openScanFlow,
-              ),
-              _InventoryTab(
-                items: inventory,
-                onRefresh: () async {
-                  await Future.delayed(const Duration(seconds: 1));
-                },
-              ),
-              _RecipeTab(
-                recipes: suggestions,
-                batchLabels: latestBatchLabels,
-                onRecipeTap: (recipe) {
-                  Navigator.of(context).push(
-                    SmoothPageRoute(
-                      builder: (_) => RecipeDetailScreen(recipe: recipe),
-                    ),
-                  );
-                },
-              ),
-            ],
+              ];
+            },
+            body: TabBarView(
+              children: [
+                _ScanTab(
+                  outcome: outcome,
+                  itemsLogged: itemsLogged,
+                  onScan: _openScanFlow,
+                ),
+                _InventoryTab(
+                  items: inventory,
+                  onRefresh: () async {
+                    await Future.delayed(const Duration(seconds: 1));
+                  },
+                ),
+                _RecipeTab(
+                  recipes: suggestions,
+                  savedRecipes: widget.appState.savedRecipes,
+                  batchLabels: latestBatchLabels,
+                  appState: widget.appState,
+                  onRecipeTap: (recipe) {
+                    Navigator.of(context).push(
+                      SmoothPageRoute(
+                        builder: (_) => RecipeDetailScreen(recipe: recipe, appState: widget.appState),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -304,10 +315,10 @@ class _HeroHeader extends StatelessWidget {
                   const Text(
                     'ScrapChef',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 30,
                       fontWeight: FontWeight.w800,
                       color: kDeepBrown,
-                      letterSpacing: -0.5,
+                      letterSpacing: -0.8,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -348,13 +359,13 @@ class _HeroHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        Divider(color: kDeepBrown.withAlpha(20), thickness: 1),
+        Divider(color: kDeepBrown.withAlpha(16), thickness: 1),
         const SizedBox(height: 12),
         Row(
           children: [
             _StatItem(
               icon: Icons.check_circle,
-              label: '$itemsLogged scraps',
+              label: '$itemsLogged scraps tracked',
               color: kSage,
             ),
             const SizedBox(width: 24),
@@ -417,7 +428,7 @@ class _ActionPanel extends StatelessWidget {
           child: _ActionButton(
             onPressed: onScan,
             icon: Icons.camera_alt,
-            label: 'Scan Scrap',
+              label: 'Scan Scrap',
             color: kTerracotta,
             isPrimary: true,
           ),
@@ -427,7 +438,7 @@ class _ActionPanel extends StatelessWidget {
           child: _ActionButton(
             onPressed: onManualAdd,
             icon: Icons.add,
-            label: 'Add Manually',
+              label: 'Add Manually',
             color: kSage,
             isPrimary: false,
           ),
@@ -585,7 +596,7 @@ class _ScanTab extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'Capture food scraps for recipes',
+                          'Capture scraps, classify them, and get recipe matches',
                           style: TextStyle(
                             fontSize: 13,
                             color: kDeepBrown.withAlpha(140),
@@ -596,12 +607,13 @@ class _ScanTab extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              _SecondaryButton(
-                onPressed: onScan,
-                icon: Icons.camera_alt,
-                label: 'Open Camera',
-                color: kTerracotta,
+              const SizedBox(height: 12),
+              Text(
+                'Use the Scan Scrap button above to capture a photo.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: kDeepBrown.withAlpha(140),
+                ),
               ),
             ],
           ),
@@ -888,11 +900,11 @@ class _HowItWorksSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const _StepRow(number: '1', text: 'Open camera and capture a food scrap'),
+        const _StepRow(number: '1', text: 'Tap Scan Scrap and capture a food scrap'),
         const SizedBox(height: 12),
-        const _StepRow(number: '2', text: 'Confirm or correct the identified label'),
+        const _StepRow(number: '2', text: 'AI identifies the scrap type and logs it if confident'),
         const SizedBox(height: 12),
-        const _StepRow(number: '3', text: 'Get recipe ideas based on your scraps'),
+        const _StepRow(number: '3', text: 'Get recipe ideas based on your scraps and weight'),
       ],
     );
   }
@@ -1125,17 +1137,21 @@ class _InventoryTile extends StatelessWidget {
 class _RecipeTab extends StatelessWidget {
   const _RecipeTab({
     required this.recipes,
+    required this.savedRecipes,
     required this.batchLabels,
+    required this.appState,
     required this.onRecipeTap,
   });
 
   final List<RecipeSuggestion> recipes;
+  final List<SavedRecipeRecord> savedRecipes;
   final List<String> batchLabels;
+  final AppState appState;
   final void Function(RecipeSuggestion) onRecipeTap;
 
   @override
   Widget build(BuildContext context) {
-    if (recipes.isEmpty) {
+    if (recipes.isEmpty && savedRecipes.isEmpty) {
       return Center(
         child: EmptyStateWithMascot(
           mascot: const NoRecipesMascot(size: 140),
@@ -1145,18 +1161,129 @@ class _RecipeTab extends StatelessWidget {
       );
     }
 
-    return ListView.builder(
+    return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-      itemCount: recipes.length,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 14),
-          child: _RecipeTile(
-            recipe: recipes[index],
-            onTap: () => onRecipeTap(recipes[index]),
+      children: [
+        if (savedRecipes.isNotEmpty) ...[
+          _SectionHeader(title: 'Saved recipes'),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 180,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: savedRecipes.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final saved = savedRecipes[index];
+                return SizedBox(
+                  width: 250,
+                  child: _SavedRecipeTile(
+                    savedRecipe: saved,
+                    onTap: () {
+                      onRecipeTap(
+                        RecipeSuggestion(
+                          id: saved.recipeId,
+                          title: saved.title,
+                          summary: saved.summary,
+                          ingredients: saved.ingredients,
+                          matchReason: saved.matchReason,
+                          chefNote: saved.chefNote,
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
           ),
-        );
-      },
+          const SizedBox(height: 18),
+          _SectionHeader(title: 'Recommended for you'),
+          const SizedBox(height: 12),
+        ],
+        ...recipes.map((recipe) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: _RecipeTile(
+              recipe: recipe,
+              onTap: () => onRecipeTap(recipe),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+        color: kDeepBrown,
+      ),
+    );
+  }
+}
+
+class _SavedRecipeTile extends StatelessWidget {
+  const _SavedRecipeTile({required this.savedRecipe, required this.onTap});
+
+  final SavedRecipeRecord savedRecipe;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: kLightSage,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: kSage.withAlpha(50)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.favorite, color: kTerracotta, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    savedRecipe.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: kDeepBrown),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              savedRecipe.summary,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 13, color: kDeepBrown.withAlpha(170), height: 1.4),
+            ),
+            const Spacer(),
+            if ((savedRecipe.userNotes ?? '').isNotEmpty)
+              Text(
+                'Note: ${savedRecipe.userNotes}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: kDeepBrown.withAlpha(140)),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1520,8 +1647,8 @@ class _HelpSheet extends StatelessWidget {
               const SizedBox(height: 12),
               _TipItem(
                 icon: Icons.check_circle,
-                title: 'Verify Labels',
-                description: 'Confirm the AI-detected scrap type for accuracy',
+                title: 'Auto-Detect Scraps',
+                description: 'Confident detections are logged automatically',
               ),
               const SizedBox(height: 12),
               _TipItem(

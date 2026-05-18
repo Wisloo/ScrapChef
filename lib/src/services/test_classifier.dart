@@ -43,7 +43,7 @@ class _TestClassifierScreenState extends State<TestClassifierScreen> {
   Future<void> _testClassifier() async {
     try {
       // Test with a simple text file containing class names
-      final result = await _classifier.classifyImage(File('assets/models/class_names_full.txt'));
+      final result = await _classifier.classifyImage(File('assets/models/class_names_binary.txt'));
       setState(() {
         _result = 'Test completed: ${result.topPrediction.label} (${(result.topPrediction.confidence * 100).toStringAsFixed(1)}%)';
         _error = null;

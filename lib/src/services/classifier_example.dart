@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'food_classifier.dart';
+import 'mock_real_classifier.dart';
 
 /// Example widget showing how to use the food classifier
 class FoodRecognitionScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class FoodRecognitionScreen extends StatefulWidget {
 }
 
 class _FoodRecognitionScreenState extends State<FoodRecognitionScreen> {
-  final FoodClassifier _classifier = FoodClassifier();
+  final MockRealClassifier _classifier = MockRealClassifier();
   final ImagePicker _picker = ImagePicker();
   
   bool _isLoading = true;

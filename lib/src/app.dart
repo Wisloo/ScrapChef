@@ -1,31 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'screens/home_screen.dart';
-import 'services/test_classifier.dart';
+import 'screens/login_screen.dart';
 import 'services/mock_real_classifier.dart';
 import 'services/recipe_service.dart';
 import 'state/app_state.dart';
 
 // Warm earthy solid color palette
-const Color kCream = Color(0xFFFAF7F2);
-const Color kTerracotta = Color(0xFFC17A4A);
-const Color kSage = Color(0xFF7A9E7E);
-const Color kDeepBrown = Color(0xFF3D2914);
+const Color kCream = Color(0xFFF6F1E8);
+const Color kTerracotta = Color(0xFFB86137);
+const Color kSage = Color(0xFF58765C);
+const Color kDeepBrown = Color(0xFF2D1F16);
 
-class ScrapChefApp extends StatelessWidget {
+class ScrapChefApp extends StatefulWidget {
   const ScrapChefApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final appState = AppState(
+  State<ScrapChefApp> createState() => _ScrapChefAppState();
+}
+
+class _ScrapChefAppState extends State<ScrapChefApp> {
+  late final AppState appState;
+
+  @override
+  void initState() {
+    super.initState();
+    appState = AppState(
       classifierService: MockRealClassifier(),
       recipeService: RecipeService(),
     );
+  }
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'ScrapChef',
-      theme: ThemeData(
+  @override
+  void dispose() {
+    appState.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: appState,
+      builder: (context, _) {
+        final Widget startScreen;
+        if (!appState.isReady) {
+          startScreen = const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        } else if (appState.isSignedIn) {
+          startScreen = HomeScreen(appState: appState);
+        } else {
+          startScreen = LoginScreen(appState: appState);
+        }
+
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'ScrapChef',
+          theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
         colorScheme: const ColorScheme.light(
@@ -39,6 +71,7 @@ class ScrapChefApp extends StatelessWidget {
           onBackground: kDeepBrown,
         ),
         scaffoldBackgroundColor: kCream,
+        fontFamily: GoogleFonts.manrope().fontFamily,
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -104,10 +137,20 @@ class ScrapChefApp extends StatelessWidget {
             height: 1.4,
           ),
         ),
+        cardTheme: CardThemeData(
+          color: const Color(0xFFFDFBF7),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+        dividerTheme: DividerThemeData(
+          color: kDeepBrown.withAlpha(18),
+          thickness: 1,
+        ),
       ),
-      home: HomeScreen(appState: appState),
-      routes: {
-        '/test': (context) => const TestClassifierScreen(),
+          home: startScreen,
+        );
       },
     );
   }

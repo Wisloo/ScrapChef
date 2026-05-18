@@ -2,30 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models.dart';
+import '../state/app_state.dart';
 
-// Warm earthy colors
-const Color kCream = Color(0xFFFAF7F2);
-const Color kTerracotta = Color(0xFFC17A4A);
-const Color kSage = Color(0xFF7A9E7E);
-const Color kDeepBrown = Color(0xFF3D2914);
+const Color kCream = Color(0xFFF6F1E8);
+const Color kTerracotta = Color(0xFFB86137);
+const Color kSage = Color(0xFF58765C);
+const Color kDeepBrown = Color(0xFF2D1F16);
 const Color kCardBg = Colors.white;
-const Color kLightSage = Color(0xFFE8F0E8);
-const Color kLightTerracotta = Color(0xFFF5E6DC);
+const Color kLightSage = Color(0xFFE5EFE4);
+const Color kLightTerracotta = Color(0xFFF3E1D3);
 
 class RecipeDetailScreen extends StatelessWidget {
-  const RecipeDetailScreen({super.key, required this.recipe});
+  const RecipeDetailScreen({super.key, required this.recipe, required this.appState});
 
   final RecipeSuggestion recipe;
+  final AppState appState;
 
   @override
   Widget build(BuildContext context) {
+    final isSaved = appState.isRecipeSaved(recipe);
+
     return Scaffold(
       backgroundColor: kCream,
       body: CustomScrollView(
         slivers: [
-          // App Bar with recipe title
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 220,
             pinned: true,
             backgroundColor: kTerracotta,
             flexibleSpace: FlexibleSpaceBar(
@@ -34,13 +36,13 @@ class RecipeDetailScreen extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
-                  fontSize: 20,
+                  fontSize: 18,
                 ),
               ),
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [kTerracotta, kSage.withAlpha(200)],
+                    colors: [kTerracotta, kSage.withAlpha(220)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -48,46 +50,21 @@ class RecipeDetailScreen extends StatelessWidget {
                 child: Center(
                   child: Icon(
                     Icons.restaurant_menu,
-                    size: 80,
-                    color: Colors.white.withAlpha(100),
+                    size: 84,
+                    color: Colors.white.withAlpha(90),
                   ),
                 ),
               ),
             ),
           ),
-          // Content
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Match reason badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: kLightSage,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: kSage.withAlpha(100)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.auto_awesome, size: 16, color: kSage),
-                        const SizedBox(width: 8),
-                        Text(
-                          recipe.matchReason,
-                          style: const TextStyle(
-                            color: kSage,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _MatchBadge(matchReason: recipe.matchReason),
                   const SizedBox(height: 24),
-                  // Summary
                   Text(
                     recipe.summary,
                     style: TextStyle(
@@ -97,8 +74,7 @@ class RecipeDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 28),
-                  // Ingredients Section
-                  _SectionTitle(
+                  const _SectionTitle(
                     icon: Icons.shopping_basket,
                     title: 'Ingredients',
                     color: kTerracotta,
@@ -149,8 +125,7 @@ class RecipeDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 28),
-                  // Steps Section
-                  _SectionTitle(
+                  const _SectionTitle(
                     icon: Icons.format_list_numbered,
                     title: 'Steps',
                     color: kTerracotta,
@@ -170,18 +145,17 @@ class RecipeDetailScreen extends StatelessWidget {
                       ],
                     ),
                     child: Column(
-                      children: [
-                        _buildStep('1', 'Gather all your fresh ingredients'),
-                        _buildStep('2', 'Prepare the vegetables by washing and chopping'),
-                        _buildStep('3', 'Heat a pan with olive oil over medium heat'),
-                        _buildStep('4', 'Add ingredients and cook for 15-20 minutes'),
-                        _buildStep('5', 'Season to taste and serve warm'),
+                      children: const [
+                        _Step(number: '1', text: 'Gather all your ingredients and clean the scraps.'),
+                        _Step(number: '2', text: 'Prepare the vegetables by washing and chopping.'),
+                        _Step(number: '3', text: 'Heat a pan with olive oil over medium heat.'),
+                        _Step(number: '4', text: 'Add ingredients and cook until tender.'),
+                        _Step(number: '5', text: 'Season to taste and serve warm.'),
                       ],
                     ),
                   ),
                   if (recipe.chefNote != null) ...[
                     const SizedBox(height: 28),
-                    // Chef Note
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -192,15 +166,11 @@ class RecipeDetailScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          const Row(
                             children: [
-                              const Icon(
-                                Icons.lightbulb,
-                                color: kTerracotta,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
+                              Icon(Icons.lightbulb, color: kTerracotta, size: 20),
+                              SizedBox(width: 8),
+                              Text(
                                 'Chef\'s Note',
                                 style: TextStyle(
                                   fontSize: 16,
@@ -225,21 +195,123 @@ class RecipeDetailScreen extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 32),
-                  // Action Buttons
                   Row(
                     children: [
                       Expanded(
                         child: _ActionButton(
-                          icon: Icons.favorite_border,
-                          label: 'Save',
-                          onTap: () {
+                          icon: isSaved ? Icons.favorite : Icons.favorite_border,
+                          label: isSaved ? 'Saved' : 'Save',
+                          color: isSaved ? kSage : kDeepBrown,
+                          onTap: () async {
                             HapticFeedback.mediumImpact();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Recipe saved!'),
-                                backgroundColor: kSage,
+                            if (!appState.isSignedIn) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Sign in to save recipes.')),
+                              );
+                              return;
+                            }
+
+                            await appState.toggleSavedRecipe(recipe);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(appState.isRecipeSaved(recipe) ? 'Recipe saved!' : 'Recipe removed.'),
+                                  backgroundColor: kSage,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icons.note_add,
+                          label: 'Note',
+                          color: kTerracotta,
+                          onTap: () async {
+                            HapticFeedback.mediumImpact();
+                            if (!appState.isSignedIn) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Sign in to add notes.')),
+                              );
+                              return;
+                            }
+
+                            final existing = appState.savedRecipes.firstWhere(
+                              (saved) => saved.recipeId == recipe.stableId,
+                              orElse: () => SavedRecipeRecord(
+                                recipeId: recipe.stableId,
+                                title: recipe.title,
+                                summary: recipe.summary,
+                                ingredients: recipe.ingredients,
+                                matchReason: recipe.matchReason,
+                                savedAt: DateTime.now(),
+                                chefNote: recipe.chefNote,
                               ),
                             );
+                            final controller = TextEditingController(text: existing.userNotes ?? '');
+
+                            final note = await showModalBottomSheet<String>(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (sheetContext) => Padding(
+                                padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Recipe note',
+                                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      TextField(
+                                        controller: controller,
+                                        minLines: 3,
+                                        maxLines: 6,
+                                        decoration: const InputDecoration(
+                                          hintText: 'Add tweaks, substitutions, or portion notes...',
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: OutlinedButton(
+                                              onPressed: () => Navigator.of(sheetContext).pop(),
+                                              child: const Text('Cancel'),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: FilledButton(
+                                              onPressed: () => Navigator.of(sheetContext).pop(controller.text.trim()),
+                                              child: const Text('Save note'),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+
+                            if (note != null) {
+                              if (!appState.isRecipeSaved(recipe)) {
+                                await appState.toggleSavedRecipe(recipe, notes: note.isEmpty ? null : note);
+                              } else if (note.isNotEmpty) {
+                                await appState.updateSavedRecipeNotes(recipe.stableId, note);
+                              }
+                            }
                           },
                         ),
                       ),
@@ -271,10 +343,75 @@ class RecipeDetailScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildStep(String number, String text) {
+class _MatchBadge extends StatelessWidget {
+  const _MatchBadge({required this.matchReason});
+
+  final String matchReason;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: kLightSage,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: kSage.withAlpha(100)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.auto_awesome, size: 16, color: kSage),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              matchReason,
+              style: const TextStyle(
+                color: kSage,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.icon, required this.title, required this.color});
+
+  final IconData icon;
+  final String title;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: kDeepBrown),
+        ),
+      ],
+    );
+  }
+}
+
+class _Step extends StatelessWidget {
+  const _Step({required this.number, required this.text});
+
+  final String number;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -289,21 +426,14 @@ class RecipeDetailScreen extends StatelessWidget {
             ),
             child: Text(
               number,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: kTerracotta,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w700, color: kTerracotta),
             ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                fontSize: 15,
-                color: kDeepBrown.withAlpha(170),
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 15, color: kDeepBrown.withAlpha(170), height: 1.5),
             ),
           ),
         ],
@@ -312,85 +442,40 @@ class RecipeDetailScreen extends StatelessWidget {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.icon,
-    required this.title,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String title;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: color.withAlpha(30),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, size: 22, color: color),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: kDeepBrown,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.color = kSage,
-  });
+  const _ActionButton({required this.icon, required this.label, required this.onTap, this.color = kDeepBrown});
 
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
   final Color color;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
+          color: kCardBg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withAlpha(60)),
           boxShadow: [
             BoxShadow(
-              color: color.withAlpha(50),
+              color: kDeepBrown.withAlpha(10),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
+            Icon(icon, color: color),
+            const SizedBox(height: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w700, color: color),
             ),
           ],
         ),

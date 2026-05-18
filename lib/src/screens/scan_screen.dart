@@ -7,13 +7,13 @@ import 'package:image_picker/image_picker.dart';
 import '../state/app_state.dart';
 
 // Warm earthy solid color palette
-const Color kCream = Color(0xFFFAF7F2);
-const Color kTerracotta = Color(0xFFC17A4A);
-const Color kSage = Color(0xFF7A9E7E);
-const Color kDeepBrown = Color(0xFF3D2914);
+const Color kCream = Color(0xFFF6F1E8);
+const Color kTerracotta = Color(0xFFB86137);
+const Color kSage = Color(0xFF58765C);
+const Color kDeepBrown = Color(0xFF2D1F16);
 const Color kCardBg = Colors.white;
-const Color kLightSage = Color(0xFFE8F0E8);
-const Color kLightTerracotta = Color(0xFFF5E6DC);
+const Color kLightSage = Color(0xFFE5EFE4);
+const Color kLightTerracotta = Color(0xFFF3E1D3);
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key, required this.appState});
@@ -47,236 +47,52 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   Future<void> _showLabelSelector() async {
-    // Try to classify the image first
-    if (_selectedImage != null) {
-      try {
-        final result = await widget.appState.classifierService.classifyImage(File(_selectedImage!.path));
-        
-        // Show result to user for confirmation
-        final confirmed = await _showClassificationResult(result);
-        
-        if (confirmed) {
-          if (_batchMode) {
-            setState(() {
-              _batchLabels.add(result.topPrediction.label);
-              _selectedImage = null;
-            });
-            HapticFeedback.mediumImpact();
-          } else {
-            widget.appState.confirmManualClassification(
-              result.topPrediction.label,
-              confidence: result.topPrediction.confidence,
+    if (_selectedImage == null) {
+      return;
+    }
+
+    try {
+      final result = await widget.appState.classifierService.classifyImage(
+        File(_selectedImage!.path),
+      );
+      final prediction = result.topPrediction;
+      final isFoodWaste = prediction.label.toLowerCase().trim() != 'not_food_waste';
+      final isConfident =
+          prediction.confidence >= AppState.scanConfidenceThreshold;
+
+      if (_batchMode) {
+        if (isFoodWaste && isConfident) {
+          setState(() {
+            _batchLabels.add(prediction.label);
+            _selectedImage = null;
+          });
+          HapticFeedback.mediumImpact();
+        } else {
+          setState(() => _selectedImage = null);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No food scraps detected.')),
             );
-            HapticFeedback.mediumImpact();
-            if (mounted) {
-              Navigator.of(context).pop(widget.appState.lastOutcome);
-            }
           }
         }
-      } catch (e) {
-        // If classification fails, fall back to manual selection
-        _showManualLabelSelector();
+        return;
       }
-    } else {
-      _showManualLabelSelector();
-    }
-  }
 
-  Future<void> _showManualLabelSelector() async {
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _LabelSelectorSheet(labels: widget.appState.supportedLabels),
-    );
-
-    if (selected != null && selected.isNotEmpty) {
-      if (_batchMode) {
-        setState(() {
-          _batchLabels.add(selected);
-          _selectedImage = null;
-        });
-        HapticFeedback.mediumImpact();
-      } else {
-        widget.appState.confirmManualClassification(
-          selected,
-          confidence: 1.0,
+      widget.appState.handleAutoClassification(
+        prediction.label,
+        confidence: prediction.confidence,
+      );
+      HapticFeedback.mediumImpact();
+      if (mounted) {
+        Navigator.of(context).pop(widget.appState.lastOutcome);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Classification failed: $e')),
         );
-        HapticFeedback.mediumImpact();
-        if (mounted) {
-          Navigator.of(context).pop(widget.appState.lastOutcome);
-        }
       }
     }
-  }
-
-  Future<bool> _showClassificationResult(dynamic result) async {
-    return await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _showClassificationResultDialog(result),
-    ) ?? false;
-  }
-
-  Widget _showClassificationResultDialog(dynamic result) {
-    final prediction = result.topPrediction;
-    final isConfident = prediction.confidence > 0.7;
-    
-    return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: kCardBg,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: kDeepBrown.withAlpha(30),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isConfident ? kSage : kLightTerracotta,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'AI Classification Result',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: kDeepBrown,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isConfident ? kSage.withAlpha(20) : kLightTerracotta.withAlpha(20),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isConfident ? kSage : kLightTerracotta,
-                    width: 2,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      prediction.label,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: kDeepBrown,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Confidence: ${(prediction.confidence * 100).toStringAsFixed(1)}%',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: isConfident ? kSage : kTerracotta,
-                      ),
-                    ),
-                    if (!isConfident) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        'Low confidence - please verify',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: kTerracotta,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(context).pop(false),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: kCardBg.withAlpha(230),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: kDeepBrown.withAlpha(60)),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.edit, color: Color.fromARGB(200, 61, 41, 20), size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'Manual Select',
-                              style: TextStyle(
-                                color: Color.fromARGB(200, 61, 41, 20),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(context).pop(true),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: isConfident ? kSage : kTerracotta,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.check, color: Colors.white, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'Accept',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Future<void> _showBatchPreview() async {

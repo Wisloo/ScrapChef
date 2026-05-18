@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../state/app_state.dart';
+
 // Warm earthy colors (Light)
-const Color kCream = Color(0xFFFAF7F2);
-const Color kTerracotta = Color(0xFFC17A4A);
-const Color kSage = Color(0xFF7A9E7E);
-const Color kDeepBrown = Color(0xFF3D2914);
+const Color kCream = Color(0xFFF6F1E8);
+const Color kTerracotta = Color(0xFFB86137);
+const Color kSage = Color(0xFF58765C);
+const Color kDeepBrown = Color(0xFF2D1F16);
 const Color kCardBg = Colors.white;
 
 // Dark theme colors
@@ -14,7 +16,9 @@ const Color kDarkCard = Color(0xFF2D2D2D);
 const Color kDarkText = Color(0xFFF5F5F5);
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, required this.appState});
+
+  final AppState appState;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -62,6 +66,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          _SectionHeader(title: 'Account', icon: Icons.person),
+          const SizedBox(height: 12),
+          _SettingsCard(
+            child: Column(
+              children: [
+                _InfoTile(
+                  icon: Icons.email,
+                  iconColor: kTerracotta,
+                  title: 'Signed in as',
+                  value: widget.appState.currentUserEmail ?? 'Not signed in',
+                ),
+                Divider(color: kDeepBrown.withAlpha(20)),
+                _InfoTile(
+                  icon: Icons.bookmark,
+                  iconColor: kSage,
+                  title: 'Saved recipes',
+                  value: '${widget.appState.savedRecipes.length}',
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: widget.appState.isSignedIn
+                        ? () async {
+                            HapticFeedback.mediumImpact();
+                            await widget.appState.signOut();
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                            }
+                          }
+                        : null,
+                    icon: const Icon(Icons.logout),
+                    label: const Text('Sign out'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
           // Appearance Section
           _SectionHeader(title: 'Appearance', icon: Icons.palette),
           const SizedBox(height: 12),

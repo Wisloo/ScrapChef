@@ -1,23 +1,28 @@
 import 'package:flutter/foundation.dart';
 
 import '../models.dart';
+import '../services/firebase_auth_service.dart';
+import '../services/firebase_recipe_store.dart';
 import '../services/mock_real_classifier.dart';
 import '../services/recipe_service.dart';
 import '../services/sound_service.dart';
 
 class AppState extends ChangeNotifier {
+  static const double scanConfidenceThreshold = 0.70;
   AppState({
     required MockRealClassifier classifierService,
     required RecipeService recipeService,
   })  : _classifierService = classifierService,
-        _recipeService = recipeService {
+        _recipeService = recipeService,
+        _authService = FirebaseAuthService(),
+        _recipeStore = FirebaseRecipeStore() {
     // Initialize the classifier
-    _initializeClassifier();
-    // Start with empty inventory to show cute mascots!
-    // _seedDemoInventory();
+    _bootstrap();
   }
 
   final MockRealClassifier _classifierService;
+  final FirebaseAuthService _authService;
+  final FirebaseRecipeStore _recipeStore;
 
   // Public getter to access classifier from screens
   MockRealClassifier get classifierService => _classifierService;
@@ -25,13 +30,26 @@ class AppState extends ChangeNotifier {
 
   final List<ScrapItem> _inventory = <ScrapItem>[];
   final List<String> _latestBatchLabels = <String>[];
+  final List<SavedRecipeRecord> _savedRecipes = <SavedRecipeRecord>[];
   ScanOutcome? _lastOutcome;
+  bool _isBootstrapping = true;
+  bool _isLoadingRecipes = false;
 
-  List<String> get supportedLabels => _classifierService.labels ?? [];
+  List<String> get supportedLabels => _classifierService.labels;
 
   List<ScrapItem> get inventory => List.unmodifiable(_inventory);
 
+  bool get isReady => !_isBootstrapping;
+
+  bool get isSignedIn => _authService.isSignedIn;
+
+  String? get currentUserEmail => _authService.userEmail;
+
+  bool get isLoadingRecipes => _isLoadingRecipes;
+
   ScanOutcome? get lastOutcome => _lastOutcome;
+
+  List<SavedRecipeRecord> get savedRecipes => List.unmodifiable(_savedRecipes);
 
   double get divertedWasteKg {
     return _inventory
@@ -55,6 +73,10 @@ class AppState extends ChangeNotifier {
 
   List<String> get latestBatchLabels => List.unmodifiable(_latestBatchLabels);
 
+  bool isRecipeSaved(RecipeSuggestion recipe) {
+    return _savedRecipes.any((saved) => saved.recipeId == recipe.stableId);
+  }
+
   /// Recipes prioritize the latest scanned batch when available.
   List<RecipeSuggestion> get activeRecipeSuggestions {
     if (_latestBatchLabels.isNotEmpty) {
@@ -66,6 +88,101 @@ class AppState extends ChangeNotifier {
   /// Suggest recipes for an explicit set of labels (useful for previewing a batch before committing).
   List<RecipeSuggestion> suggestForLabels(Iterable<String> labels) {
     return _recipeService.suggestForLabels(labels);
+  }
+
+  Future<void> signUp(String email, String password) async {
+    final normalizedEmail = email.trim();
+    if (normalizedEmail.isEmpty) {
+      throw Exception('Email is required.');
+    }
+    if (password.isEmpty || password.length < 6) {
+      throw Exception('Password must be at least 6 characters.');
+    }
+
+    try {
+      await _authService.signUp(normalizedEmail, password);
+      await _reloadSavedRecipes();
+      notifyListeners();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> signIn(String email, String password) async {
+    final normalizedEmail = email.trim();
+    if (normalizedEmail.isEmpty) {
+      throw Exception('Email is required.');
+    }
+    if (password.isEmpty) {
+      throw Exception('Password is required.');
+    }
+
+    try {
+      await _authService.signIn(normalizedEmail, password);
+      await _reloadSavedRecipes();
+      notifyListeners();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> signOut() async {
+    _savedRecipes.clear();
+    await _authService.signOut();
+    notifyListeners();
+  }
+
+  Future<void> toggleSavedRecipe(RecipeSuggestion recipe, {String? notes}) async {
+    if (!isSignedIn || currentUserEmail == null) {
+      throw Exception('Sign in first to save recipes.');
+    }
+
+    final existingIndex = _savedRecipes.indexWhere((saved) => saved.recipeId == recipe.stableId);
+    if (existingIndex >= 0) {
+      _savedRecipes.removeAt(existingIndex);
+      await _recipeStore.deleteRecipe(currentUserEmail!, recipe.stableId);
+    } else {
+      final record = SavedRecipeRecord(
+        recipeId: recipe.stableId,
+        title: recipe.title,
+        summary: recipe.summary,
+        ingredients: recipe.ingredients,
+        matchReason: recipe.matchReason,
+        savedAt: DateTime.now(),
+        chefNote: recipe.chefNote,
+        userNotes: notes,
+      );
+      _savedRecipes.insert(0, record);
+      await _recipeStore.upsertRecipe(currentUserEmail!, record);
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> updateSavedRecipeNotes(String recipeId, String notes) async {
+    if (!isSignedIn || currentUserEmail == null) {
+      throw Exception('Sign in first to save recipes.');
+    }
+
+    final index = _savedRecipes.indexWhere((saved) => saved.recipeId == recipeId);
+    if (index < 0) {
+      return;
+    }
+
+    final updated = _savedRecipes[index].copyWith(userNotes: notes);
+    _savedRecipes[index] = updated;
+    await _recipeStore.updateRecipeNotes(currentUserEmail!, recipeId, notes);
+    notifyListeners();
+  }
+
+  Future<void> removeSavedRecipe(String recipeId) async {
+    if (!isSignedIn || currentUserEmail == null) {
+      throw Exception('Sign in first to save recipes.');
+    }
+
+    _savedRecipes.removeWhere((saved) => saved.recipeId == recipeId);
+    await _recipeStore.deleteRecipe(currentUserEmail!, recipeId);
+    notifyListeners();
   }
 
   /// Add multiple items at once (batch scan). Each label will be logged with full confidence.
@@ -151,6 +268,45 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void handleAutoClassification(String label, {required double confidence}) {
+    final normalized = label.toLowerCase().trim();
+    final isFoodWaste = normalized != 'not_food_waste' && normalized != 'unknown';
+    final isConfident = confidence >= scanConfidenceThreshold;
+
+    if (isFoodWaste && isConfident) {
+      _lastOutcome = ScanOutcome(
+        predictedLabel: label,
+        confidence: confidence,
+        recommendedAction: 'Food scrap detected and logged automatically.',
+        requiresReview: false,
+        note: 'Auto scan: ${(confidence * 100).toStringAsFixed(1)}% confidence.',
+      );
+      _logItem(
+        label: label,
+        confidence: confidence,
+        source: 'auto-scan',
+      );
+
+      _latestBatchLabels
+        ..clear()
+        ..add(label);
+
+      SoundService.playSuccess();
+    } else {
+      _lastOutcome = ScanOutcome(
+        predictedLabel: label,
+        confidence: confidence,
+        recommendedAction: isConfident
+            ? 'No food scraps detected.'
+            : 'Low confidence. Try another photo.',
+        requiresReview: false,
+        note: 'Auto scan skipped logging.',
+      );
+    }
+
+    notifyListeners();
+  }
+
   void addManualItem(String label) {
     _lastOutcome = ScanOutcome(
       predictedLabel: label,
@@ -171,12 +327,55 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _initializeClassifier() async {
+  Future<void> _bootstrap() async {
     try {
       await _classifierService.initialize();
-      print('FoodClassifier initialized successfully');
+      
+      // Listen to auth state changes
+      _authService.authStateChanges.listen((user) {
+        if (user != null) {
+          _reloadSavedRecipes();
+        } else {
+          _savedRecipes.clear();
+        }
+      });
+      
+      // Try to restore existing session
+      if (_authService.isSignedIn) {
+        await _reloadSavedRecipes();
+      }
+      
+      if (_classifierService.isLoaded) {
+        print('GeminiScrapClassifier initialized successfully');
+      } else {
+        print('GeminiScrapClassifier not initialized. Set --dart-define=GEMINI_API_KEY=YOUR_KEY before scanning.');
+      }
     } catch (e) {
-      print('Failed to initialize FoodClassifier: $e');
+      print('Failed to initialize app: $e');
+    } finally {
+      _isBootstrapping = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _reloadSavedRecipes() async {
+    if (!_authService.isSignedIn || _authService.userEmail == null) {
+      _savedRecipes.clear();
+      return;
+    }
+
+    try {
+      _isLoadingRecipes = true;
+      notifyListeners();
+      
+      _savedRecipes.clear();
+      final recipes = await _recipeStore.loadRecipes(_authService.userEmail!);
+      _savedRecipes.addAll(recipes);
+    } catch (e) {
+      print('Failed to load saved recipes: $e');
+    } finally {
+      _isLoadingRecipes = false;
+      notifyListeners();
     }
   }
 
