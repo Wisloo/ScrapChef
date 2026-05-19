@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/firebase_recipe_store.dart';
+import '../services/firebase_scrap_store.dart';
 import '../services/gemini_service.dart';
 import '../services/recipe_service.dart';
 import '../services/sound_service.dart';
@@ -15,7 +16,8 @@ class AppState extends ChangeNotifier {
   })  : _classifierService = classifierService,
         _recipeService = recipeService,
         _authService = FirebaseAuthService(),
-        _recipeStore = FirebaseRecipeStore() {
+        _recipeStore = FirebaseRecipeStore(),
+        _scrapStore = FirebaseScrapStore() {
     // Initialize the classifier
     _bootstrap();
   }
@@ -23,6 +25,7 @@ class AppState extends ChangeNotifier {
   final GeminiService _classifierService;
   final FirebaseAuthService _authService;
   final FirebaseRecipeStore _recipeStore;
+  final FirebaseScrapStore _scrapStore;
 
   // Public getter to access classifier from screens
   GeminiService get classifierService => _classifierService;
@@ -334,16 +337,19 @@ class AppState extends ChangeNotifier {
       _authService.authStateChanges.listen((user) {
         if (user != null) {
           _reloadSavedRecipes();
+          _reloadScraps();
         } else {
           _savedRecipes.clear();
+          _inventory.clear();
         }
       });
-      
+
       // Try to restore existing session
       if (_authService.isSignedIn) {
         await _reloadSavedRecipes();
+        await _reloadScraps();
       }
-      
+
       // No isLoaded check for GeminiService
       print("GeminiService initialized successfully (API key must be set).");
     } catch (e) {
@@ -355,7 +361,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _reloadSavedRecipes() async {
-    if (!_authService.isSignedIn || _authService.userEmail == null) {
+    if (!_authService.isSignedIn || _authService.userId == null) {
       _savedRecipes.clear();
       return;
     }
@@ -363,15 +369,31 @@ class AppState extends ChangeNotifier {
     try {
       _isLoadingRecipes = true;
       notifyListeners();
-      
+
       _savedRecipes.clear();
-      final recipes = await _recipeStore.loadRecipes(_authService.userEmail!);
+      final recipes = await _recipeStore.loadRecipes(_authService.userId!);
       _savedRecipes.addAll(recipes);
     } catch (e) {
       print('Failed to load saved recipes: $e');
     } finally {
       _isLoadingRecipes = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> _reloadScraps() async {
+    if (!_authService.isSignedIn || _authService.userId == null) {
+      _inventory.clear();
+      return;
+    }
+
+    try {
+      _inventory.clear();
+      final scraps = await _scrapStore.loadScraps(_authService.userId!);
+      _inventory.addAll(scraps);
+      notifyListeners();
+    } catch (e) {
+      print('Failed to load scraps: $e');
     }
   }
 
@@ -382,16 +404,21 @@ class AppState extends ChangeNotifier {
     bool manualCorrection = false,
     double? weightGrams,
   }) {
-    _inventory.insert(
-      0,
-      ScrapItem(
-        label: label,
-        weightGrams: weightGrams,
-        loggedAt: DateTime.now(),
-        source: source,
-        confidence: confidence,
-        manualCorrection: manualCorrection,
-      ),
+    final scrap = ScrapItem(
+      label: label,
+      weightGrams: weightGrams,
+      loggedAt: DateTime.now(),
+      source: source,
+      confidence: confidence,
+      manualCorrection: manualCorrection,
     );
+    _inventory.insert(0, scrap);
+
+    // Save to Firebase if user is signed in
+    if (_authService.isSignedIn && _authService.userId != null) {
+      _scrapStore.saveScrap(_authService.userId!, scrap).catchError((e) {
+        print('Failed to save scrap to Firebase: $e');
+      });
+    }
   }
 }

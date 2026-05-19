@@ -11,20 +11,29 @@ import 'scan_screen.dart';
 import 'settings_screen.dart';
 import 'splash_screen.dart';
 
-// Warm earthy solid color palette
-const Color kCream = Color(0xFFF6F1E8);
-const Color kTerracotta = Color(0xFFB86137);
-const Color kSage = Color(0xFF58765C);
-const Color kDeepBrown = Color(0xFF2D1F16);
-const Color kWarmBrown = Color(0xFF7B5A2A);
-const Color kCardBg = Color(0xFFFDFBF7);
-const Color kLightSage = Color(0xFFE5EFE4);
-const Color kLightTerracotta = Color(0xFFF3E1D3);
+// Modern color palette
+const Color kPrimary = Color(0xFF6C5CE7);
+const Color kPrimaryLight = Color(0xFFA29BFE);
+const Color kSecondary = Color(0xFF00CEC9);
+const Color kAccent = Color(0xFFFD79A8);
+const Color kBackground = Color(0xFFF8F9FA);
+const Color kSurface = Color(0xFFFFFFFF);
+const Color kText = Color(0xFF2D3436);
+const Color kTextLight = Color(0xFF636E72);
+const Color kDivider = Color(0xFFDFE6E9);
+
+// Dark theme colors
+const Color kDarkBackground = Color(0xFF121212);
+const Color kDarkSurface = Color(0xFF1E1E1E);
+const Color kDarkText = Color(0xFFE0E0E0);
+const Color kDarkTextLight = Color(0xFFB0B0B0);
+const Color kDarkDivider = Color(0xFF2C2C2C);
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.appState});
+  const HomeScreen({super.key, required this.appState, required this.onThemeChanged});
 
   final AppState appState;
+  final ValueChanged<bool> onThemeChanged;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -34,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   bool _showSplash = true;
+  bool _useBatchMatching = true;
 
   @override
   void initState() {
@@ -102,7 +112,10 @@ class _HomeScreenState extends State<HomeScreen>
     HapticFeedback.mediumImpact();
     Navigator.of(context).push(
       SlideUpPageRoute(
-        builder: (_) => SettingsScreen(appState: widget.appState),
+        builder: (_) => SettingsScreen(
+          appState: widget.appState,
+          onThemeChanged: widget.onThemeChanged,
+        ),
       ),
     );
   }
@@ -130,55 +143,87 @@ class _HomeScreenState extends State<HomeScreen>
     final itemsLogged = widget.appState.itemsLogged;
     final estimatedSavings = widget.appState.estimatedSavings;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? kDarkBackground : kBackground;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+    final textLightColor = isDark ? kDarkTextLight : kTextLight;
+    final dividerColor = isDark ? kDarkDivider : kDivider;
+
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: kCream,
+        backgroundColor: bgColor,
         floatingActionButton: FloatingActionButton(
           onPressed: _showHelp,
-          backgroundColor: kTerracotta,
+          backgroundColor: kPrimary,
+          elevation: 8,
           child: const Icon(Icons.help_outline, color: Colors.white),
         ),
         body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFFF7F2E8),
-                Color(0xFFFDFBF7),
-                Color(0xFFF3EEE4),
-              ],
-            ),
+          decoration: BoxDecoration(
+            gradient: isDark
+                ? null
+                : const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      kBackground,
+                      kSurface,
+                    ],
+                  ),
           ),
           child: NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 40, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(20, 50, 20, 0),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [kPrimary, kPrimaryLight],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.eco, color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'ScrapChef',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         GestureDetector(
                           onTap: _openSettings,
                           child: Container(
-                            padding: const EdgeInsets.all(10),
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: kCardBg,
-                              borderRadius: BorderRadius.circular(12),
+                              color: cardColor,
+                              borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: kDeepBrown.withAlpha(15),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
+                                  color: textColor.withAlpha(10),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
-                            child: const Icon(
-                              Icons.settings,
-                              color: kDeepBrown,
-                              size: 22,
+                            child: Icon(
+                              Icons.settings_rounded,
+                              color: textColor,
+                              size: 24,
                             ),
                           ),
                         ),
@@ -188,70 +233,141 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
                 SliverToBoxAdapter(
                   child: Container(
-                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    padding: const EdgeInsets.all(20),
+                    margin: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: kCardBg,
-                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [kDarkSurface, kDarkSurface]
+                            : [kPrimary, kPrimaryLight],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: kDeepBrown.withAlpha(20),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
+                          color: kPrimary.withAlpha(30),
+                          blurRadius: 24,
+                          offset: const Offset(0, 12),
                         ),
                       ],
                     ),
                     child: _HeroHeader(
                       itemsLogged: itemsLogged,
                       estimatedSavings: estimatedSavings,
+                      textColor: Colors.white,
                     ),
                   ),
                 ),
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _ActionPanel(
                       onScan: _openScanFlow,
                       onManualAdd: _addManualItem,
+                      textColor: textColor,
+                      cardColor: cardColor,
                     ),
                   ),
                 ),
                 SliverToBoxAdapter(
                   child: Container(
-                    margin: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-                    padding: const EdgeInsets.all(4),
+                    margin: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: kCardBg,
+                      color: cardColor,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: kDeepBrown.withAlpha(15),
-                          blurRadius: 10,
+                          color: textColor.withAlpha(8),
+                          blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: TabBar(
                       indicator: BoxDecoration(
-                        color: kTerracotta,
+                        gradient: const LinearGradient(
+                          colors: [kPrimary, kPrimaryLight],
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       indicatorSize: TabBarIndicatorSize.tab,
                       labelColor: Colors.white,
-                      unselectedLabelColor: kDeepBrown.withAlpha(160),
+                      unselectedLabelColor: textLightColor,
                       labelStyle: const TextStyle(
                         fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                        fontSize: 14,
                       ),
                       unselectedLabelStyle: const TextStyle(
                         fontWeight: FontWeight.w500,
-                        fontSize: 13,
+                        fontSize: 14,
                       ),
                       dividerColor: Colors.transparent,
                       tabs: const [
                         Tab(text: 'Scan'),
                         Tab(text: 'Bin'),
                         Tab(text: 'Recipes'),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: cardColor,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: dividerColor),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.restaurant_menu_rounded, color: kPrimary, size: 22),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Recipe Matching',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() => _useBatchMatching = !_useBatchMatching);
+                                    HapticFeedback.selectionClick();
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      gradient: _useBatchMatching
+                                          ? const LinearGradient(
+                                              colors: [kPrimary, kPrimaryLight],
+                                            )
+                                          : null,
+                                      color: _useBatchMatching ? null : dividerColor,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      _useBatchMatching ? 'Batch' : 'Individual',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: _useBatchMatching ? Colors.white : textColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -264,12 +380,15 @@ class _HomeScreenState extends State<HomeScreen>
                   outcome: outcome,
                   itemsLogged: itemsLogged,
                   onScan: _openScanFlow,
+                  textColor: textColor,
                 ),
                 _InventoryTab(
                   items: inventory,
                   onRefresh: () async {
                     await Future.delayed(const Duration(seconds: 1));
                   },
+                  textColor: textColor,
+                  cardColor: cardColor,
                 ),
                 _RecipeTab(
                   recipes: suggestions,
@@ -283,6 +402,9 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                     );
                   },
+                  textColor: textColor,
+                  cardColor: cardColor,
+                  useBatchMatching: _useBatchMatching,
                 ),
               ],
             ),
@@ -294,10 +416,11 @@ class _HomeScreenState extends State<HomeScreen>
 }
 
 class _HeroHeader extends StatelessWidget {
-  const _HeroHeader({required this.itemsLogged, required this.estimatedSavings});
+  const _HeroHeader({required this.itemsLogged, required this.estimatedSavings, required this.textColor});
 
   final int itemsLogged;
   final double estimatedSavings;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -312,21 +435,21 @@ class _HeroHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'ScrapChef',
                     style: TextStyle(
-                      fontSize: 30,
+                      fontSize: 32,
                       fontWeight: FontWeight.w800,
-                      color: kDeepBrown,
-                      letterSpacing: -0.8,
+                      color: textColor,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
-                    'Turn scraps into suppers',
+                    'Turn scraps into delicious meals',
                     style: TextStyle(
-                      fontSize: 14,
-                      color: kDeepBrown.withAlpha(140),
+                      fontSize: 15,
+                      color: textColor.withAlpha(180),
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -334,23 +457,23 @@ class _HeroHeader extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: kLightTerracotta,
+                color: Colors.white.withAlpha(30),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: kTerracotta.withAlpha(100)),
+                border: Border.all(color: Colors.white.withAlpha(50)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.eco, size: 16, color: kTerracotta),
-                  const SizedBox(width: 6),
+                  const Icon(Icons.eco_rounded, size: 18, color: Colors.white),
+                  const SizedBox(width: 8),
                   Text(
                     '$itemsLogged',
                     style: const TextStyle(
-                      color: kTerracotta,
+                      color: Colors.white,
                       fontWeight: FontWeight.w700,
-                      fontSize: 16,
+                      fontSize: 18,
                     ),
                   ),
                 ],
@@ -358,21 +481,21 @@ class _HeroHeader extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Divider(color: kDeepBrown.withAlpha(16), thickness: 1),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
         Row(
           children: [
             _StatItem(
-              icon: Icons.check_circle,
+              icon: Icons.check_circle_rounded,
               label: '$itemsLogged scraps tracked',
-              color: kSage,
+              color: Colors.white,
+              textColor: textColor,
             ),
             const SizedBox(width: 24),
             _StatItem(
-              icon: Icons.savings,
+              icon: Icons.savings_rounded,
               label: '₱${estimatedSavings.toStringAsFixed(0)} saved',
-              color: kTerracotta,
+              color: Colors.white,
+              textColor: textColor,
             ),
           ],
         ),
@@ -382,31 +505,25 @@ class _HeroHeader extends StatelessWidget {
 }
 
 class _StatItem extends StatelessWidget {
-  const _StatItem({required this.icon, required this.label, required this.color});
+  const _StatItem({required this.icon, required this.label, required this.color, required this.textColor});
 
   final IconData icon;
   final String label;
   final Color color;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: color.withAlpha(30),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 14, color: color),
-        ),
+        Icon(icon, size: 20, color: color),
         const SizedBox(width: 8),
         Text(
           label,
           style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: kDeepBrown.withAlpha(200),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: textColor.withAlpha(220),
           ),
         ),
       ],
@@ -415,10 +532,12 @@ class _StatItem extends StatelessWidget {
 }
 
 class _ActionPanel extends StatelessWidget {
-  const _ActionPanel({required this.onScan, required this.onManualAdd});
+  const _ActionPanel({required this.onScan, required this.onManualAdd, required this.textColor, required this.cardColor});
 
   final VoidCallback onScan;
   final VoidCallback onManualAdd;
+  final Color textColor;
+  final Color cardColor;
 
   @override
   Widget build(BuildContext context) {
@@ -427,9 +546,9 @@ class _ActionPanel extends StatelessWidget {
         Expanded(
           child: _ActionButton(
             onPressed: onScan,
-            icon: Icons.camera_alt,
+            icon: Icons.camera_alt_rounded,
               label: 'Scan Scrap',
-            color: kTerracotta,
+            color: kPrimary,
             isPrimary: true,
           ),
         ),
@@ -437,9 +556,9 @@ class _ActionPanel extends StatelessWidget {
         Expanded(
           child: _ActionButton(
             onPressed: onManualAdd,
-            icon: Icons.add,
+            icon: Icons.add_rounded,
               label: 'Add Manually',
-            color: kSage,
+            color: kSecondary,
             isPrimary: false,
           ),
         ),
@@ -506,18 +625,23 @@ class _ActionButtonState extends State<_ActionButton>
         builder: (context, child) => Transform.scale(
           scale: _scaleAnimation.value,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 18),
             decoration: BoxDecoration(
-              color: widget.isPrimary ? widget.color : Colors.white,
+              gradient: widget.isPrimary
+                  ? LinearGradient(
+                      colors: [widget.color, widget.color.withAlpha(200)],
+                    )
+                  : null,
+              color: widget.isPrimary ? null : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: widget.isPrimary
                   ? null
-                  : Border.all(color: widget.color.withAlpha(150)),
+                  : Border.all(color: widget.color.withAlpha(100)),
               boxShadow: [
                 BoxShadow(
-                  color: widget.color.withAlpha(widget.isPrimary ? 60 : 30),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: widget.color.withAlpha(widget.isPrimary ? 40 : 20),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -527,15 +651,15 @@ class _ActionButtonState extends State<_ActionButton>
                 Icon(
                   widget.icon,
                   color: widget.isPrimary ? Colors.white : widget.color,
-                  size: 22,
+                  size: 24,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Text(
                   widget.label,
                   style: TextStyle(
                     color: widget.isPrimary ? Colors.white : widget.color,
                     fontWeight: FontWeight.w700,
-                    fontSize: 14,
+                    fontSize: 15,
                   ),
                 ),
               ],
@@ -552,11 +676,13 @@ class _ScanTab extends StatelessWidget {
     required this.outcome,
     required this.itemsLogged,
     required this.onScan,
+    required this.textColor,
   });
 
   final ScanOutcome? outcome;
   final int itemsLogged;
   final VoidCallback onScan;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -573,12 +699,14 @@ class _ScanTab extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: kTerracotta.withAlpha(30),
+                      gradient: LinearGradient(
+                        colors: [kPrimary.withAlpha(30), kPrimaryLight.withAlpha(15)],
+                      ),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: const Icon(
-                      Icons.camera_enhance,
-                      color: kTerracotta,
+                      Icons.camera_enhance_rounded,
+                      color: kPrimary,
                       size: 24,
                     ),
                   ),
@@ -587,19 +715,19 @@ class _ScanTab extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Ready to scan',
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
-                            color: kDeepBrown,
+                            color: textColor,
                           ),
                         ),
                         Text(
                           'Capture scraps, classify them, and get recipe matches',
                           style: TextStyle(
                             fontSize: 13,
-                            color: kDeepBrown.withAlpha(140),
+                            color: textColor.withAlpha(140),
                           ),
                         ),
                       ],
@@ -612,7 +740,7 @@ class _ScanTab extends StatelessWidget {
                 'Use the Scan Scrap button above to capture a photo.',
                 style: TextStyle(
                   fontSize: 13,
-                  color: kDeepBrown.withAlpha(140),
+                  color: textColor.withAlpha(140),
                 ),
               ),
             ],
@@ -621,13 +749,11 @@ class _ScanTab extends StatelessWidget {
         const SizedBox(height: 16),
         if (lastOutcome != null) ...[
           _Card(
-            color: lastOutcome.requiresReview ? kLightTerracotta : kLightSage,
             child: _LatestScanCard(outcome: lastOutcome),
           ),
           const SizedBox(height: 16),
         ],
         _Card(
-          color: kLightSage,
           child: _ImpactLedger(itemsLogged: itemsLogged),
         ),
         const SizedBox(height: 16),
@@ -640,23 +766,28 @@ class _ScanTab extends StatelessWidget {
 }
 
 class _Card extends StatelessWidget {
-  const _Card({required this.child, this.color});
+  const _Card({required this.child, this.color, this.textColor});
 
   final Widget child;
   final Color? color;
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = color ?? (isDark ? kDarkSurface : kSurface);
+    final effectiveTextColor = textColor ?? (isDark ? kDarkText : kText);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color ?? kCardBg,
+        color: cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: kDeepBrown.withAlpha(15),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: effectiveTextColor.withAlpha(6),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -679,7 +810,9 @@ class _LatestScanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = outcome.requiresReview ? kTerracotta : kSage;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? kDarkText : kText;
+    final statusColor = outcome.requiresReview ? kAccent : kSecondary;
     final statusText = outcome.requiresReview ? 'Needs Review' : 'Saved';
 
     return Column(
@@ -688,18 +821,20 @@ class _LatestScanCard extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Latest Scan',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: kDeepBrown,
+                color: textColor.withAlpha(140),
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: statusColor,
+                gradient: LinearGradient(
+                  colors: [statusColor, statusColor.withAlpha(200)],
+                ),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -716,10 +851,10 @@ class _LatestScanCard extends StatelessWidget {
         const SizedBox(height: 14),
         Text(
           outcome.predictedLabel,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w800,
-            color: kDeepBrown,
+            color: textColor,
           ),
         ),
         const SizedBox(height: 12),
@@ -729,7 +864,7 @@ class _LatestScanCard extends StatelessWidget {
           _getMessage(),
           style: TextStyle(
             fontSize: 13,
-            color: kDeepBrown.withAlpha(160),
+            color: textColor.withAlpha(160),
             fontStyle: FontStyle.italic,
           ),
         ),
@@ -745,6 +880,8 @@ class _ConfidenceMeter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? kDarkText : kText;
     final percentage = (confidence * 100).toInt();
     final filledSegments = ((confidence * 10).toInt()).clamp(0, 10);
 
@@ -759,15 +896,15 @@ class _ConfidenceMeter extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: kDeepBrown.withAlpha(140),
+                color: textColor.withAlpha(140),
               ),
             ),
             Text(
               '$percentage%',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: kTerracotta,
+                color: kPrimary,
               ),
             ),
           ],
@@ -783,15 +920,14 @@ class _ConfidenceMeter extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 1),
                 decoration: BoxDecoration(
                   color: index < filledSegments
-                      ? kTerracotta
-                      : kDeepBrown.withAlpha(30),
+                      ? kPrimary
+                      : textColor.withAlpha(30),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
             ),
           ),
         ),
-      ],
     );
   }
 }
@@ -803,47 +939,55 @@ class _ImpactLedger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? kDarkText : kText;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: kSage.withAlpha(30),
-                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  colors: [kSecondary.withAlpha(30), kSecondary.withAlpha(15)],
+                ),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.eco, size: 20, color: kSage),
+              child: const Icon(Icons.eco_rounded, size: 22, color: kSecondary),
             ),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'Your Impact',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: kDeepBrown,
+                color: textColor,
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
         _ImpactRow(
-          icon: Icons.check_circle,
+          icon: Icons.check_circle_rounded,
           label: '$itemsLogged scraps scanned',
-          color: kSage,
+          color: kSecondary,
+          textColor: textColor,
         ),
         const SizedBox(height: 10),
         _ImpactRow(
-          icon: Icons.restaurant,
+          icon: Icons.restaurant_rounded,
           label: '${itemsLogged * 2} recipe ideas',
-          color: kTerracotta,
+          color: kPrimary,
+          textColor: textColor,
         ),
         const SizedBox(height: 10),
         _ImpactRow(
-          icon: Icons.spa,
+          icon: Icons.spa_rounded,
           label: 'Reducing food waste',
-          color: kSage,
+          color: kSecondary,
+          textColor: textColor,
         ),
       ],
     );
@@ -851,23 +995,26 @@ class _ImpactLedger extends StatelessWidget {
 }
 
 class _ImpactRow extends StatelessWidget {
-  const _ImpactRow({required this.icon, required this.label, required this.color});
+  const _ImpactRow({required this.icon, required this.label, required this.color, required this.textColor});
 
   final IconData icon;
   final String label;
   final Color color;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withAlpha(25),
-            borderRadius: BorderRadius.circular(8),
+            gradient: LinearGradient(
+              colors: [color.withAlpha(30), color.withAlpha(15)],
+            ),
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, size: 16, color: color),
+          child: Icon(icon, size: 18, color: color),
         ),
         const SizedBox(width: 12),
         Text(
@@ -875,7 +1022,7 @@ class _ImpactRow extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: kDeepBrown.withAlpha(180),
+            color: textColor.withAlpha(180),
           ),
         ),
       ],
@@ -888,33 +1035,37 @@ class _HowItWorksSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? kDarkText : kText;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'How it works',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: kDeepBrown,
+            color: textColor,
           ),
         ),
         const SizedBox(height: 16),
-        const _StepRow(number: '1', text: 'Tap Scan Scrap and capture a food scrap'),
+        _StepRow(number: '1', text: 'Tap Scan Scrap and capture a food scrap', textColor: textColor),
         const SizedBox(height: 12),
-        const _StepRow(number: '2', text: 'AI identifies the scrap type and logs it if confident'),
+        _StepRow(number: '2', text: 'AI identifies the scrap type and logs it if confident', textColor: textColor),
         const SizedBox(height: 12),
-        const _StepRow(number: '3', text: 'Get recipe ideas based on your scraps and weight'),
+        _StepRow(number: '3', text: 'Get recipe ideas based on your scraps and weight', textColor: textColor),
       ],
     );
   }
 }
 
 class _StepRow extends StatelessWidget {
-  const _StepRow({required this.number, required this.text});
+  const _StepRow({required this.number, required this.text, required this.textColor});
 
   final String number;
   final String text;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -922,20 +1073,22 @@ class _StepRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 28,
-          height: 28,
+          width: 30,
+          height: 30,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: kTerracotta.withAlpha(30),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: kTerracotta.withAlpha(80)),
+            gradient: LinearGradient(
+              colors: [kPrimary.withAlpha(30), kPrimaryLight.withAlpha(15)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: kPrimary.withAlpha(50)),
           ),
           child: Text(
             number,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w700,
-              fontSize: 13,
-              color: kTerracotta,
+              fontSize: 14,
+              color: kPrimary,
             ),
           ),
         ),
@@ -945,7 +1098,7 @@ class _StepRow extends StatelessWidget {
             text,
             style: TextStyle(
               fontSize: 13,
-              color: kDeepBrown.withAlpha(170),
+              color: textColor.withAlpha(170),
               height: 1.4,
             ),
           ),
@@ -976,7 +1129,9 @@ class _SecondaryButton extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: color.withAlpha(30),
+          gradient: LinearGradient(
+            colors: [color.withAlpha(30), color.withAlpha(15)],
+          ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: color.withAlpha(100)),
         ),
@@ -1001,18 +1156,20 @@ class _SecondaryButton extends StatelessWidget {
 }
 
 class _InventoryTab extends StatelessWidget {
-  const _InventoryTab({required this.items, required this.onRefresh});
+  const _InventoryTab({required this.items, required this.onRefresh, required this.textColor, required this.cardColor});
 
   final List<ScrapItem> items;
   final Future<void> Function() onRefresh;
+  final Color textColor;
+  final Color cardColor;
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
       return RefreshIndicator(
         onRefresh: onRefresh,
-        color: kTerracotta,
-        backgroundColor: kCardBg,
+        color: kPrimary,
+        backgroundColor: cardColor,
         child: ListView(
           children: [
             const SizedBox(height: 80),
@@ -1027,7 +1184,7 @@ class _InventoryTab extends StatelessWidget {
                 'Pull down to refresh ↓',
                 style: TextStyle(
                   fontSize: 13,
-                  color: kTerracotta.withAlpha(150),
+                  color: kPrimary.withAlpha(150),
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -1039,15 +1196,15 @@ class _InventoryTab extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: onRefresh,
-      color: kTerracotta,
-      backgroundColor: kCardBg,
+      color: kPrimary,
+      backgroundColor: cardColor,
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         itemCount: items.length,
         itemBuilder: (context, index) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: _InventoryTile(item: items[index]),
+            child: _InventoryTile(item: items[index], textColor: textColor, cardColor: cardColor),
           );
         },
       ),
@@ -1056,38 +1213,42 @@ class _InventoryTab extends StatelessWidget {
 }
 
 class _InventoryTile extends StatelessWidget {
-  const _InventoryTile({required this.item});
+  const _InventoryTile({required this.item, required this.textColor, required this.cardColor});
 
   final ScrapItem item;
+  final Color textColor;
+  final Color cardColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: kCardBg,
-        borderRadius: BorderRadius.circular(16),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: kDeepBrown.withAlpha(12),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: textColor.withAlpha(6),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: kSage.withAlpha(40),
-              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
+                colors: [kSecondary, kSecondary.withAlpha(180)],
+              ),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.local_florist,
-              color: kSage,
-              size: 26,
+              Icons.local_florist_rounded,
+              color: Colors.white,
+              size: 28,
             ),
           ),
           const SizedBox(width: 16),
@@ -1097,10 +1258,10 @@ class _InventoryTile extends StatelessWidget {
               children: [
                 Text(
                   item.label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: kDeepBrown,
+                    fontWeight: FontWeight.w800,
+                    color: textColor,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1108,24 +1269,24 @@ class _InventoryTile extends StatelessWidget {
                   '${item.source} • ${(item.confidence * 100).toStringAsFixed(0)}% match',
                   style: TextStyle(
                     fontSize: 13,
-                    color: kDeepBrown.withAlpha(130),
+                    color: textColor.withAlpha(120),
                   ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: item.manualCorrection
-                  ? kTerracotta.withAlpha(30)
-                  : kSage.withAlpha(30),
-              borderRadius: BorderRadius.circular(10),
+                  ? kAccent.withAlpha(15)
+                  : kSecondary.withAlpha(15),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              item.manualCorrection ? Icons.edit : Icons.check,
-              size: 18,
-              color: item.manualCorrection ? kTerracotta : kSage,
+              item.manualCorrection ? Icons.edit_rounded : Icons.check_circle_rounded,
+              size: 20,
+              color: item.manualCorrection ? kAccent : kSecondary,
             ),
           ),
         ],
@@ -1141,6 +1302,9 @@ class _RecipeTab extends StatelessWidget {
     required this.batchLabels,
     required this.appState,
     required this.onRecipeTap,
+    required this.textColor,
+    required this.cardColor,
+    required this.useBatchMatching,
   });
 
   final List<RecipeSuggestion> recipes;
@@ -1148,67 +1312,85 @@ class _RecipeTab extends StatelessWidget {
   final List<String> batchLabels;
   final AppState appState;
   final void Function(RecipeSuggestion) onRecipeTap;
+  final bool useBatchMatching;
+  final Color textColor;
+  final Color cardColor;
 
   @override
   Widget build(BuildContext context) {
-    if (recipes.isEmpty && savedRecipes.isEmpty) {
-      return Center(
-        child: EmptyStateWithMascot(
-          mascot: const NoRecipesMascot(size: 140),
-          title: 'No recipes yet',
-          subtitle: 'Scan some scraps and I\'ll cook up recipe ideas for you!',
-        ),
-      );
-    }
+    final displaySuggestions = useBatchMatching ? recipes : recipes.take(3).toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       children: [
         if (savedRecipes.isNotEmpty) ...[
-          _SectionHeader(title: 'Saved recipes'),
+          _SectionHeader(title: 'Saved Recipes'),
           const SizedBox(height: 12),
           SizedBox(
-            height: 180,
-            child: ListView.separated(
+            height: 160,
+            child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: savedRecipes.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
-                final saved = savedRecipes[index];
-                return SizedBox(
-                  width: 250,
-                  child: _SavedRecipeTile(
-                    savedRecipe: saved,
-                    onTap: () {
-                      onRecipeTap(
-                        RecipeSuggestion(
-                          id: saved.recipeId,
-                          title: saved.title,
-                          summary: saved.summary,
-                          ingredients: saved.ingredients,
-                          matchReason: saved.matchReason,
-                          chefNote: saved.chefNote,
-                        ),
-                      );
-                    },
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: SizedBox(
+                    width: 280,
+                    child: _SavedRecipeTile(
+                      savedRecipe: savedRecipes[index],
+                      onTap: () => appState.openRecipeDetail(savedRecipes[index]),
+                    ),
                   ),
                 );
               },
             ),
           ),
-          const SizedBox(height: 18),
-          _SectionHeader(title: 'Recommended for you'),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
         ],
-        ...recipes.map((recipe) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: _RecipeTile(
-              recipe: recipe,
-              onTap: () => onRecipeTap(recipe),
+        _SectionHeader(title: useBatchMatching ? 'Recipe Suggestions (Batch)' : 'Recipe Suggestions (Individual)'),
+        const SizedBox(height: 12),
+        if (displaySuggestions.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(Icons.restaurant_rounded, size: 64, color: kPrimary.withAlpha(100)),
+                  const SizedBox(height: 16),
+                  Text(
+                    useBatchMatching
+                        ? 'No recipes match your batch'
+                        : 'No recipes match this scrap',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: textColor.withAlpha(140),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Add more scraps to get better matches',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: textColor.withAlpha(120),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          );
-        }),
+          )
+        else
+          ...displaySuggestions.map((recipe) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _RecipeTile(
+                recipe: recipe,
+                onTap: () => onRecipeTap(recipe),
+                textColor: textColor,
+                cardColor: cardColor,
+              ),
+            );
+          }),
       ],
     );
   }
@@ -1221,12 +1403,16 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? kDarkText : kText;
+
     return Text(
       title,
-      style: const TextStyle(
-        fontSize: 15,
+      style: TextStyle(
+        fontSize: 16,
         fontWeight: FontWeight.w800,
-        color: kDeepBrown,
+        color: textColor,
+        letterSpacing: -0.3,
       ),
     );
   }
@@ -1240,38 +1426,43 @@ class _SavedRecipeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? kDarkText : kText;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: kLightSage,
+          gradient: LinearGradient(
+            colors: [kPrimary.withAlpha(10), kPrimaryLight.withAlpha(10)],
+          ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: kSage.withAlpha(50)),
+          border: Border.all(color: kPrimary.withAlpha(30)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.favorite, color: kTerracotta, size: 18),
+                const Icon(Icons.favorite_rounded, color: kAccent, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     savedRecipe.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: kDeepBrown),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textColor),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Text(
               savedRecipe.summary,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 13, color: kDeepBrown.withAlpha(170), height: 1.4),
+              style: TextStyle(fontSize: 13, color: textColor.withAlpha(160), height: 1.4),
             ),
             const Spacer(),
             if ((savedRecipe.userNotes ?? '').isNotEmpty)
@@ -1279,7 +1470,7 @@ class _SavedRecipeTile extends StatelessWidget {
                 'Note: ${savedRecipe.userNotes}',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: kDeepBrown.withAlpha(140)),
+                style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: textColor.withAlpha(120)),
               ),
           ],
         ),
@@ -1289,10 +1480,12 @@ class _SavedRecipeTile extends StatelessWidget {
 }
 
 class _RecipeTile extends StatelessWidget {
-  const _RecipeTile({required this.recipe, required this.onTap});
+  const _RecipeTile({required this.recipe, required this.onTap, required this.textColor, required this.cardColor});
 
   final RecipeSuggestion recipe;
   final VoidCallback onTap;
+  final Color textColor;
+  final Color cardColor;
 
   @override
   Widget build(BuildContext context) {
@@ -1301,129 +1494,105 @@ class _RecipeTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: kCardBg,
+          color: cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: kDeepBrown.withAlpha(15),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
+              color: textColor.withAlpha(8),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        recipe.title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: kDeepBrown,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        recipe.matchReason,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: kDeepBrown.withAlpha(140),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: kTerracotta.withAlpha(30),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.restaurant,
-                    size: 20,
-                    color: kTerracotta,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Text(
-              recipe.summary,
-              style: TextStyle(
-                fontSize: 14,
-                color: kDeepBrown.withAlpha(160),
-                height: 1.5,
-              ),
-            ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: recipe.ingredients.map((ingredient) {
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: kCream,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: kDeepBrown.withAlpha(20)),
-                ),
-                child: Text(
-                  ingredient,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: kDeepBrown.withAlpha(180),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          if (recipe.chefNote != null) ...[
-            const SizedBox(height: 14),
             Container(
-              padding: const EdgeInsets.all(14),
+              width: 90,
+              height: 90,
               decoration: BoxDecoration(
-                color: kLightTerracotta,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: kTerracotta.withAlpha(50)),
+                gradient: LinearGradient(
+                  colors: [kPrimaryLight, kPrimary],
+                ),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Row(
+              child: recipe.id != null && recipe.id!.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.network(
+                        'https://www.themealdb.com/images/ingredients/${recipe.id}.png',
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.restaurant_rounded, size: 36, color: Colors.white);
+                        },
+                      ),
+                    )
+                  : const Icon(Icons.restaurant_rounded, size: 36, color: Colors.white),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.lightbulb,
-                    size: 18,
-                    color: kTerracotta.withAlpha(200),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      recipe.chefNote!,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontStyle: FontStyle.italic,
-                        color: kDeepBrown.withAlpha(160),
-                        height: 1.5,
-                      ),
+                  Text(
+                    recipe.title,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: textColor,
                     ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    recipe.summary,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: textColor.withAlpha(140),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: recipe.ingredients.take(3).map((ing) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: kPrimary.withAlpha(10),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          ing,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: kPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: kPrimary.withAlpha(10),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: kPrimary,
+                size: 18,
+              ),
+            ),
           ],
-        ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class _ManualAddSheet extends StatefulWidget {
@@ -1440,15 +1609,19 @@ class _ManualAddSheetState extends State<_ManualAddSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
     return SafeArea(
       child: Container(
         margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: kCardBg,
+          color: cardColor,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: kDeepBrown.withAlpha(30),
+              color: textColor.withAlpha(20),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -1470,18 +1643,18 @@ class _ManualAddSheetState extends State<_ManualAddSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: kDeepBrown.withAlpha(60),
+                    color: textColor.withAlpha(60),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Add Scrap',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: kDeepBrown,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 6),
@@ -1489,7 +1662,7 @@ class _ManualAddSheetState extends State<_ManualAddSheet> {
                 'Select the type of food scrap',
                 style: TextStyle(
                   fontSize: 14,
-                  color: kDeepBrown.withAlpha(140),
+                  color: textColor.withAlpha(140),
                 ),
               ),
               const SizedBox(height: 20),
@@ -1515,12 +1688,17 @@ class _ManualAddSheetState extends State<_ManualAddSheet> {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         decoration: BoxDecoration(
-                          color: isSelected ? kTerracotta : kCream,
+                          gradient: isSelected
+                              ? LinearGradient(
+                                  colors: [kPrimary, kPrimaryLight],
+                                )
+                              : null,
+                          color: isSelected ? null : textColor.withAlpha(10),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color: isSelected
-                                ? kTerracotta
-                                : kDeepBrown.withAlpha(30),
+                                ? kPrimary
+                                : textColor.withAlpha(30),
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -1534,7 +1712,7 @@ class _ManualAddSheetState extends State<_ManualAddSheet> {
                                 : FontWeight.w500,
                             color: isSelected
                                 ? Colors.white
-                                : kDeepBrown.withAlpha(180),
+                                : textColor.withAlpha(180),
                           ),
                         ),
                       ),
@@ -1554,9 +1732,12 @@ class _ManualAddSheetState extends State<_ManualAddSheet> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   decoration: BoxDecoration(
-                    color: selectedLabel == null
-                        ? kDeepBrown.withAlpha(30)
-                        : kTerracotta,
+                    gradient: selectedLabel == null
+                        ? null
+                        : LinearGradient(
+                            colors: [kPrimary, kPrimaryLight],
+                          ),
+                    color: selectedLabel == null ? textColor.withAlpha(30) : null,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -1564,7 +1745,7 @@ class _ManualAddSheetState extends State<_ManualAddSheet> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: selectedLabel == null
-                          ? kDeepBrown.withAlpha(100)
+                          ? textColor.withAlpha(100)
                           : Colors.white,
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
@@ -1586,15 +1767,19 @@ class _HelpSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
     return SafeArea(
       child: Container(
         margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: kCardBg,
+          color: cardColor,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: kDeepBrown.withAlpha(30),
+              color: textColor.withAlpha(20),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -1611,7 +1796,7 @@ class _HelpSheet extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: kDeepBrown.withAlpha(60),
+                    color: textColor.withAlpha(60),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1620,57 +1805,65 @@ class _HelpSheet extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: kTerracotta.withAlpha(30),
-                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(
+                        colors: [kPrimary.withAlpha(30), kPrimaryLight.withAlpha(15)],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.help, color: kTerracotta, size: 24),
+                    child: const Icon(Icons.help_outline_rounded, color: kPrimary, size: 26),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Quick Tips',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: kDeepBrown,
+                      color: textColor,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
               _TipItem(
-                icon: Icons.camera_alt,
+                icon: Icons.camera_alt_rounded,
                 title: 'Scan Food Scraps',
                 description: 'Take photos of vegetable peels, stems, or leftovers',
+                textColor: textColor,
               ),
               const SizedBox(height: 12),
               _TipItem(
-                icon: Icons.check_circle,
+                icon: Icons.check_circle_rounded,
                 title: 'Auto-Detect Scraps',
                 description: 'Confident detections are logged automatically',
+                textColor: textColor,
               ),
               const SizedBox(height: 12),
               _TipItem(
-                icon: Icons.restaurant,
+                icon: Icons.restaurant_rounded,
                 title: 'Get Recipes',
                 description: 'Discover meals based on your scrap bin',
+                textColor: textColor,
               ),
               const SizedBox(height: 12),
               _TipItem(
-                icon: Icons.eco,
+                icon: Icons.eco_rounded,
                 title: 'Reduce Waste',
                 description: 'Track your impact on food waste reduction',
+                textColor: textColor,
               ),
               const SizedBox(height: 24),
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
                   decoration: BoxDecoration(
-                    color: kSage,
-                    borderRadius: BorderRadius.circular(14),
+                    gradient: LinearGradient(
+                      colors: [kPrimary, kPrimaryLight],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Text(
                     'Got it!',
@@ -1696,11 +1889,13 @@ class _TipItem extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.description,
+    required this.textColor,
   });
 
   final IconData icon;
   final String title;
   final String description;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -1708,12 +1903,14 @@ class _TipItem extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: kSage.withAlpha(30),
-            borderRadius: BorderRadius.circular(10),
+            gradient: LinearGradient(
+              colors: [kSecondary.withAlpha(30), kSecondary.withAlpha(15)],
+            ),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, size: 18, color: kSage),
+          child: Icon(icon, size: 20, color: kSecondary),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1722,10 +1919,10 @@ class _TipItem extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: kDeepBrown,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 2),
@@ -1733,7 +1930,7 @@ class _TipItem extends StatelessWidget {
                 description,
                 style: TextStyle(
                   fontSize: 13,
-                  color: kDeepBrown.withAlpha(140),
+                  color: textColor.withAlpha(140),
                 ),
               ),
             ],

@@ -1,6 +1,9 @@
 import '../models.dart';
+import 'mealdb_service.dart';
 
 class RecipeService {
+  final MealDBService _mealDBService = MealDBService();
+
   List<RecipeSuggestion> suggest(List<ScrapItem> inventory) {
     final labels = inventory.map((item) => item.label).toList();
     return _buildSuggestions(labels);
@@ -9,6 +12,17 @@ class RecipeService {
   /// Suggest recipes given an explicit set of labels (useful for batch previews).
   List<RecipeSuggestion> suggestForLabels(Iterable<String> labelsIterable) {
     return _buildSuggestions(labelsIterable.toList());
+  }
+
+  /// Search MealDB for recipes based on ingredient
+  Future<List<RecipeSuggestion>> searchMealDB(String ingredient) async {
+    try {
+      final recipes = await _mealDBService.searchByIngredient(ingredient);
+      return recipes.map((meal) => _mealDBToSuggestion(meal)).toList();
+    } catch (e) {
+      print('Failed to search MealDB: $e');
+      return [];
+    }
   }
 
   List<RecipeSuggestion> _buildSuggestions(List<String> labels) {
@@ -49,6 +63,17 @@ class RecipeService {
       ingredients: recipe.ingredients,
       matchReason: matchReason,
       chefNote: recipe.chefNote,
+    );
+  }
+
+  RecipeSuggestion _mealDBToSuggestion(MealDBRecipe meal) {
+    return RecipeSuggestion(
+      id: meal.id,
+      title: meal.name,
+      summary: '${meal.category} • ${meal.area}',
+      ingredients: meal.ingredients.map((ing) => '${ing.name} (${ing.measure})').toList(),
+      matchReason: 'From MealDB database',
+      chefNote: meal.instructions,
     );
   }
 

@@ -4,11 +4,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../state/app_state.dart';
 
-const Color kCream = Color(0xFFF6F1E8);
-const Color kTerracotta = Color(0xFFB86137);
-const Color kSage = Color(0xFF58765C);
-const Color kDeepBrown = Color(0xFF2D1F16);
-const Color kCardBg = Color(0xFFFDFBF7);
+// Modern color palette
+const Color kPrimary = Color(0xFF6C5CE7);
+const Color kPrimaryLight = Color(0xFFA29BFE);
+const Color kSecondary = Color(0xFF00CEC9);
+const Color kAccent = Color(0xFFFD79A8);
+const Color kBackground = Color(0xFFF8F9FA);
+const Color kSurface = Color(0xFFFFFFFF);
+const Color kText = Color(0xFF2D3436);
+const Color kTextLight = Color(0xFF636E72);
+const Color kDivider = Color(0xFFDFE6E9);
+
+// Dark theme colors
+const Color kDarkBackground = Color(0xFF121212);
+const Color kDarkSurface = Color(0xFF1E1E1E);
+const Color kDarkText = Color(0xFFE0E0E0);
+const Color kDarkTextLight = Color(0xFFB0B0B0);
+const Color kDarkDivider = Color(0xFF2C2C2C);
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.appState});
@@ -78,8 +90,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? kDarkBackground : kBackground;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
     return Scaffold(
-      backgroundColor: kCream,
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -87,14 +104,14 @@ class _LoginScreenState extends State<LoginScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 460),
               child: Container(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
-                  color: kCardBg,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
-                      color: kDeepBrown.withAlpha(20),
-                      blurRadius: 28,
+                      color: textColor.withAlpha(10),
+                      blurRadius: 32,
                       offset: const Offset(0, 12),
                     ),
                   ],
@@ -103,80 +120,136 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: kTerracotta.withAlpha(24),
-                        borderRadius: BorderRadius.circular(18),
+                        gradient: LinearGradient(
+                          colors: [kPrimary.withAlpha(30), kPrimaryLight.withAlpha(15)],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Icon(Icons.eco, color: kTerracotta, size: 30),
+                      child: const Icon(Icons.eco_rounded, color: kPrimary, size: 32),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
                     Text(
                       'ScrapChef',
-                      style: Theme.of(context).textTheme.headlineMedium,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Text(
                       'Sign in to save your own recipes, keep notes, and sync your scrap recommendations.',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: kDeepBrown.withAlpha(180),
-                          ),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: textColor.withAlpha(140),
+                        height: 1.4,
+                      ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 32),
                     TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Email',
                         hintText: 'you@example.com',
+                        filled: true,
+                        fillColor: isDark ? kDarkBackground : kBackground,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: isDark ? kDarkDivider : kDivider),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: isDark ? kDarkDivider : kDivider),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: kPrimary, width: 2),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
                     TextField(
                       controller: _passwordController,
                       obscureText: true,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Password',
                         hintText: 'At least 6 characters',
+                        filled: true,
+                        fillColor: isDark ? kDarkBackground : kBackground,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: isDark ? kDarkDivider : kDivider),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: isDark ? kDarkDivider : kDivider),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: kPrimary, width: 2),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
                     SizedBox(
                       width: double.infinity,
+                      height: 54,
                       child: FilledButton(
                         onPressed: _isSubmitting ? null : _continue,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: kPrimary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
                         child: _isSubmitting
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                               )
-                            : const Text('Continue'),
+                            : const Text('Continue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF3E1D3),
+                        gradient: LinearGradient(
+                          colors: [kSecondary.withAlpha(10), kSecondary.withAlpha(5)],
+                        ),
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: kSecondary.withAlpha(30)),
                       ),
                       child: Text(
                         'Your recipes and preferences are securely stored with Firebase. Create an account or sign in to get started.',
                         style: TextStyle(
-                          color: kDeepBrown.withAlpha(180),
+                          color: textColor.withAlpha(160),
                           height: 1.4,
+                          fontSize: 13,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: () {
-                        _emailController.text = 'demo@scrapchef.local';
-                        _passwordController.text = 'demo123456';
-                      },
-                      child: const Text('Use demo login'),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: TextButton(
+                        onPressed: () {
+                          _emailController.text = 'demo@scrapchef.local';
+                          _passwordController.text = 'demo123456';
+                        },
+                        child: Text(
+                          'Use demo login',
+                          style: TextStyle(
+                            color: kPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

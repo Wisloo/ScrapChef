@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
 
-// Warm earthy colors
-const Color kCream = Color(0xFFFAF7F2);
-const Color kTerracotta = Color(0xFFC17A4A);
-const Color kSage = Color(0xFF7A9E7E);
-const Color kDeepBrown = Color(0xFF3D2914);
+// Modern color palette
+const Color kPrimary = Color(0xFF6C5CE7);
+const Color kPrimaryLight = Color(0xFFA29BFE);
+const Color kSecondary = Color(0xFF00CEC9);
+const Color kAccent = Color(0xFFFD79A8);
+const Color kBackground = Color(0xFFF8F9FA);
+const Color kSurface = Color(0xFFFFFFFF);
+const Color kText = Color(0xFF2D3436);
+const Color kTextLight = Color(0xFF636E72);
+const Color kDivider = Color(0xFFDFE6E9);
+
+// Dark theme colors
+const Color kDarkBackground = Color(0xFF121212);
+const Color kDarkSurface = Color(0xFF1E1E1E);
+const Color kDarkText = Color(0xFFE0E0E0);
+const Color kDarkTextLight = Color(0xFFB0B0B0);
+const Color kDarkDivider = Color(0xFF2C2C2C);
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key, required this.onComplete});
@@ -88,8 +100,12 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? kDarkBackground : kBackground;
+    final textColor = isDark ? kDarkText : kText;
+
     return Scaffold(
-      backgroundColor: kCream,
+      backgroundColor: bgColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -107,21 +123,21 @@ class _SplashScreenState extends State<SplashScreen>
                       height: 140,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [kTerracotta, kSage],
+                          colors: [kPrimary, kPrimaryLight],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(35),
                         boxShadow: [
                           BoxShadow(
-                            color: kTerracotta.withAlpha(60),
+                            color: kPrimary.withAlpha(60),
                             blurRadius: 30,
                             offset: const Offset(0, 10),
                           ),
                         ],
                       ),
                       child: const Icon(
-                        Icons.eco,
+                        Icons.eco_rounded,
                         size: 70,
                         color: Colors.white,
                       ),
@@ -138,21 +154,21 @@ class _SplashScreenState extends State<SplashScreen>
                 position: _textSlide,
                 child: Column(
                   children: [
-                    const Text(
+                    Text(
                       'ScrapChef',
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.w800,
-                        color: kDeepBrown,
+                        color: textColor,
                         letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Turn scraps into suppers',
+                      'Turn scraps into delicious meals',
                       style: TextStyle(
                         fontSize: 16,
-                        color: kDeepBrown.withAlpha(140),
+                        color: textColor.withAlpha(140),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -170,7 +186,7 @@ class _SplashScreenState extends State<SplashScreen>
                 child: CircularProgressIndicator(
                   strokeWidth: 3,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    kTerracotta.withAlpha(150),
+                    kPrimary.withAlpha(150),
                   ),
                 ),
               ),

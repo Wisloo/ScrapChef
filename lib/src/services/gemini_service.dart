@@ -8,7 +8,7 @@ class GeminiService {
 
   GeminiService() : _model = GenerativeModel(
           model: 'gemini-2.5-flash', // Use gemini-2.5-flash for multimodal tasks
-          apiKey: const String.fromEnvironment('GEMINI_API_KEY'), // Replace with your actual API key
+          apiKey: 'AIzaSyBrwRO0hYMStVhsfKFLYaSmpVRGpfFgGvw',
         );
 
   Future<String> analyzeFoodScraps(String imagePath) async {
@@ -29,7 +29,17 @@ class GeminiService {
 
     try {
       final response = await _model.generateContent(content);
-      return response.text ?? 'No analysis found.';
+      final text = response.text ?? 'No analysis found.';
+      
+      // Extract JSON from markdown code blocks if present
+      final jsonPattern = RegExp(r'```json\s*([\s\S]*?)\s*```');
+      final match = jsonPattern.firstMatch(text);
+      
+      if (match != null) {
+        return match.group(1) ?? text;
+      }
+      
+      return text;
     } catch (e) {
       return 'Error during API call: $e';
     }

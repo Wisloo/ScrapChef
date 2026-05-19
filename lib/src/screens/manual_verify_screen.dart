@@ -3,14 +3,23 @@ import 'package:flutter/services.dart';
 
 import '../state/app_state.dart';
 
-// Warm earthy solid color palette
-const Color kCream = Color(0xFFFAF7F2);
-const Color kTerracotta = Color(0xFFC17A4A);
-const Color kSage = Color(0xFF7A9E7E);
-const Color kDeepBrown = Color(0xFF3D2914);
-const Color kCardBg = Colors.white;
-const Color kLightSage = Color(0xFFE8F0E8);
-const Color kLightTerracotta = Color(0xFFF5E6DC);
+// Modern color palette
+const Color kPrimary = Color(0xFF6C5CE7);
+const Color kPrimaryLight = Color(0xFFA29BFE);
+const Color kSecondary = Color(0xFF00CEC9);
+const Color kAccent = Color(0xFFFD79A8);
+const Color kBackground = Color(0xFFF8F9FA);
+const Color kSurface = Color(0xFFFFFFFF);
+const Color kText = Color(0xFF2D3436);
+const Color kTextLight = Color(0xFF636E72);
+const Color kDivider = Color(0xFFDFE6E9);
+
+// Dark theme colors
+const Color kDarkBackground = Color(0xFF121212);
+const Color kDarkSurface = Color(0xFF1E1E1E);
+const Color kDarkText = Color(0xFFE0E0E0);
+const Color kDarkTextLight = Color(0xFFB0B0B0);
+const Color kDarkDivider = Color(0xFF2C2C2C);
 
 class ManualVerifyScreen extends StatefulWidget {
   const ManualVerifyScreen({
@@ -49,35 +58,40 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? kDarkBackground : kBackground;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
     final confidencePercent = (widget.confidence * 100).toInt();
     final isLowConfidence = widget.confidence < 0.7;
 
     return Scaffold(
-      backgroundColor: kCream,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: kCream,
+        backgroundColor: bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: kDeepBrown),
+          icon: const Icon(Icons.arrow_back_rounded, color: kPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            color: kCardBg,
+            color: cardColor,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: kDeepBrown.withAlpha(15),
+                color: textColor.withAlpha(15),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: const Text(
+          child: Text(
             'Verify Scrap',
             style: TextStyle(
-              color: kDeepBrown,
+              color: textColor,
               fontWeight: FontWeight.w700,
               fontSize: 16,
             ),
@@ -95,16 +109,18 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: isLowConfidence ? kLightTerracotta : kLightSage,
+                  gradient: isLowConfidence
+                      ? LinearGradient(colors: [kAccent.withAlpha(20), kAccent.withAlpha(10)])
+                      : LinearGradient(colors: [kSecondary.withAlpha(20), kSecondary.withAlpha(10)]),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isLowConfidence
-                        ? kTerracotta.withAlpha(80)
-                        : kSage.withAlpha(80),
+                        ? kAccent.withAlpha(50)
+                        : kSecondary.withAlpha(50),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: kDeepBrown.withAlpha(15),
+                      color: textColor.withAlpha(15),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -119,15 +135,15 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: isLowConfidence
-                                ? kTerracotta.withAlpha(30)
-                                : kSage.withAlpha(30),
+                                ? kAccent.withAlpha(30)
+                                : kSecondary.withAlpha(30),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Icon(
                             isLowConfidence
                                 ? Icons.warning_amber_rounded
                                 : Icons.check_circle_rounded,
-                            color: isLowConfidence ? kTerracotta : kSage,
+                            color: isLowConfidence ? kAccent : kSecondary,
                             size: 26,
                           ),
                         ),
@@ -143,7 +159,7 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w700,
-                                  color: kDeepBrown,
+                                  color: textColor,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -151,7 +167,7 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                                 '$confidencePercent% match for ${widget.predictedLabel}',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: kDeepBrown.withAlpha(140),
+                                  color: textColor.withAlpha(140),
                                 ),
                               ),
                             ],
@@ -166,7 +182,7 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                           : 'Please verify that the prediction is correct before saving.',
                       style: TextStyle(
                         fontSize: 14,
-                        color: kDeepBrown.withAlpha(160),
+                        color: textColor.withAlpha(160),
                         height: 1.5,
                       ),
                     ),
@@ -178,11 +194,11 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: kCardBg,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: kDeepBrown.withAlpha(15),
+                      color: textColor.withAlpha(15),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -196,7 +212,7 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: kDeepBrown.withAlpha(140),
+                        color: textColor.withAlpha(140),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -204,16 +220,16 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: kLightTerracotta,
+                        gradient: LinearGradient(colors: [kPrimary.withAlpha(15), kPrimaryLight.withAlpha(8)]),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: kTerracotta.withAlpha(100)),
+                        border: Border.all(color: kPrimary.withAlpha(30)),
                       ),
                       child: Text(
                         widget.predictedLabel,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
-                          color: kDeepBrown,
+                          color: textColor,
                         ),
                       ),
                     ),
@@ -225,11 +241,11 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: kCardBg,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: kDeepBrown.withAlpha(15),
+                      color: textColor.withAlpha(15),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -241,12 +257,12 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Select Correct Type',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: kDeepBrown,
+                            color: textColor,
                           ),
                         ),
                         Container(
@@ -255,16 +271,18 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: kSage.withAlpha(30),
+                            gradient: LinearGradient(
+                              colors: [kSecondary.withAlpha(30), kSecondary.withAlpha(15)],
+                            ),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: kSage.withAlpha(80)),
+                            border: Border.all(color: kSecondary.withAlpha(50)),
                           ),
                           child: Text(
                             '${widget.appState.supportedLabels.length} options',
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: kSage,
+                              color: kSecondary,
                             ),
                           ),
                         ),
@@ -290,20 +308,23 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                               vertical: 12,
                             ),
                             decoration: BoxDecoration(
-                              color: isSelected ? kSage : kCream,
+                              gradient: isSelected
+                                  ? LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)])
+                                  : null,
+                              color: isSelected ? null : textColor.withAlpha(10),
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color: isSelected
-                                    ? kSage
+                                    ? kSecondary
                                     : isOriginal
-                                        ? kTerracotta.withAlpha(100)
-                                        : kDeepBrown.withAlpha(30),
+                                        ? kPrimary.withAlpha(50)
+                                        : textColor.withAlpha(20),
                                 width: isSelected || isOriginal ? 2 : 1,
                               ),
                               boxShadow: isSelected
                                   ? [
                                       BoxShadow(
-                                        color: kSage.withAlpha(50),
+                                        color: kSecondary.withAlpha(50),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
                                       ),
@@ -315,9 +336,9 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                               children: [
                                 if (isOriginal && !isSelected) ...[
                                   Icon(
-                                    Icons.auto_awesome,
+                                    Icons.auto_awesome_rounded,
                                     size: 16,
-                                    color: kTerracotta.withAlpha(180),
+                                    color: kPrimary.withAlpha(180),
                                   ),
                                   const SizedBox(width: 6),
                                 ],
@@ -330,7 +351,7 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                                         : FontWeight.w500,
                                     color: isSelected
                                         ? Colors.white
-                                        : kDeepBrown.withAlpha(
+                                        : textColor.withAlpha(
                                             isOriginal ? 200 : 170),
                                   ),
                                 ),
@@ -351,15 +372,16 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   decoration: BoxDecoration(
-                    color: selectedLabel == null
-                        ? kDeepBrown.withAlpha(40)
-                        : kSage,
+                    gradient: selectedLabel == null
+                        ? null
+                        : LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)]),
+                    color: selectedLabel == null ? textColor.withAlpha(20) : null,
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: selectedLabel == null
                         ? null
                         : [
                             BoxShadow(
-                              color: kSage.withAlpha(60),
+                              color: kSecondary.withAlpha(60),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             ),
@@ -369,9 +391,9 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.check,
+                        Icons.check_circle_rounded,
                         color: selectedLabel == null
-                            ? kDeepBrown.withAlpha(100)
+                            ? textColor.withAlpha(100)
                             : Colors.white,
                         size: 24,
                       ),
@@ -380,7 +402,7 @@ class _ManualVerifyScreenState extends State<ManualVerifyScreen> {
                         'Confirm & Save',
                         style: TextStyle(
                           color: selectedLabel == null
-                              ? kDeepBrown.withAlpha(100)
+                              ? textColor.withAlpha(100)
                               : Colors.white,
                           fontWeight: FontWeight.w700,
                           fontSize: 17,

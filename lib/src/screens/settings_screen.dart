@@ -2,23 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../state/app_state.dart';
+import '../services/sound_service.dart';
 
-// Warm earthy colors (Light)
-const Color kCream = Color(0xFFF6F1E8);
-const Color kTerracotta = Color(0xFFB86137);
-const Color kSage = Color(0xFF58765C);
-const Color kDeepBrown = Color(0xFF2D1F16);
-const Color kCardBg = Colors.white;
+// Modern color palette
+const Color kPrimary = Color(0xFF6C5CE7);
+const Color kPrimaryLight = Color(0xFFA29BFE);
+const Color kSecondary = Color(0xFF00CEC9);
+const Color kAccent = Color(0xFFFD79A8);
+const Color kBackground = Color(0xFFF8F9FA);
+const Color kSurface = Color(0xFFFFFFFF);
+const Color kText = Color(0xFF2D3436);
+const Color kTextLight = Color(0xFF636E72);
+const Color kDivider = Color(0xFFDFE6E9);
 
 // Dark theme colors
-const Color kDarkBg = Color(0xFF1A1A1A);
-const Color kDarkCard = Color(0xFF2D2D2D);
-const Color kDarkText = Color(0xFFF5F5F5);
+const Color kDarkBackground = Color(0xFF121212);
+const Color kDarkSurface = Color(0xFF1E1E1E);
+const Color kDarkText = Color(0xFFE0E0E0);
+const Color kDarkTextLight = Color(0xFFB0B0B0);
+const Color kDarkDivider = Color(0xFF2C2C2C);
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, required this.appState});
+  const SettingsScreen({super.key, required this.appState, required this.onThemeChanged});
 
   final AppState appState;
+  final ValueChanged<bool> onThemeChanged;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -29,33 +37,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool hapticFeedback = true;
 
   @override
+  void initState() {
+    super.initState();
+    // Initialize haptic feedback from SoundService
+    hapticFeedback = true; // Default to enabled
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? kDarkBackground : kBackground;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+    final textLightColor = isDark ? kDarkTextLight : kTextLight;
+    final dividerColor = isDark ? kDarkDivider : kDivider;
+
     return Scaffold(
-      backgroundColor: kCream,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: kCream,
+        backgroundColor: bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: kDeepBrown),
+          icon: Icon(Icons.arrow_back_rounded, color: textColor),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            color: kCardBg,
+            gradient: LinearGradient(
+              colors: [kPrimary, kPrimaryLight],
+            ),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: kDeepBrown.withAlpha(15),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
-          child: const Text(
+          child: Text(
             'Settings',
-            style: TextStyle(
-              color: kDeepBrown,
+            style: const TextStyle(
+              color: Colors.white,
               fontWeight: FontWeight.w700,
               fontSize: 16,
             ),
@@ -66,23 +83,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          _SectionHeader(title: 'Account', icon: Icons.person),
+          _SectionHeader(title: 'Account', icon: Icons.person_rounded, textColor: textColor),
           const SizedBox(height: 12),
           _SettingsCard(
+            cardColor: cardColor,
+            textColor: textColor,
             child: Column(
               children: [
                 _InfoTile(
-                  icon: Icons.email,
-                  iconColor: kTerracotta,
+                  icon: Icons.email_rounded,
+                  iconColor: kPrimary,
                   title: 'Signed in as',
                   value: widget.appState.currentUserEmail ?? 'Not signed in',
+                  textColor: textColor,
                 ),
-                Divider(color: kDeepBrown.withAlpha(20)),
+                Divider(color: dividerColor),
                 _InfoTile(
-                  icon: Icons.bookmark,
-                  iconColor: kSage,
+                  icon: Icons.bookmark_rounded,
+                  iconColor: kSecondary,
                   title: 'Saved recipes',
                   value: '${widget.appState.savedRecipes.length}',
+                  textColor: textColor,
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -97,8 +118,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             }
                           }
                         : null,
-                    icon: const Icon(Icons.logout),
+                    icon: const Icon(Icons.logout_rounded),
                     label: const Text('Sign out'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: kAccent,
+                      side: BorderSide(color: kAccent.withAlpha(100)),
+                    ),
                   ),
                 ),
               ],
@@ -106,20 +131,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
           // Appearance Section
-          _SectionHeader(title: 'Appearance', icon: Icons.palette),
+          _SectionHeader(title: 'Appearance', icon: Icons.palette_rounded, textColor: textColor),
           const SizedBox(height: 12),
           _SettingsCard(
+            cardColor: cardColor,
+            textColor: textColor,
             child: Column(
               children: [
                 _ToggleTile(
-                  icon: isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                  iconColor: isDarkMode ? Colors.indigo : kTerracotta,
+                  icon: isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                  iconColor: kPrimary,
                   title: 'Dark Mode',
                   subtitle: 'Switch between light and dark theme',
                   value: isDarkMode,
+                  textColor: textColor,
                   onChanged: (value) {
                     HapticFeedback.mediumImpact();
                     setState(() => isDarkMode = value);
+                    widget.onThemeChanged(value);
                     _showThemeSnackBar(value);
                   },
                 ),
@@ -128,48 +157,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
           // Feedback Section
-          _SectionHeader(title: 'Feedback', icon: Icons.touch_app),
+          _SectionHeader(title: 'Feedback', icon: Icons.touch_app_rounded, textColor: textColor),
           const SizedBox(height: 12),
           _SettingsCard(
+            cardColor: cardColor,
+            textColor: textColor,
             child: _ToggleTile(
               icon: Icons.vibration,
-              iconColor: kTerracotta,
+              iconColor: kSecondary,
               title: 'Haptic Feedback',
-              subtitle: 'Vibrate on button presses (Active)',
+              subtitle: 'Vibrate on button presses',
               value: hapticFeedback,
+              textColor: textColor,
               onChanged: (value) {
                 if (value) HapticFeedback.mediumImpact();
                 setState(() => hapticFeedback = value);
+                SoundService.setEnabled(value);
                 _showHapticSnackBar(value);
               },
             ),
           ),
           const SizedBox(height: 24),
           // About Section
-          _SectionHeader(title: 'About', icon: Icons.info),
+          _SectionHeader(title: 'About', icon: Icons.info_rounded, textColor: textColor),
           const SizedBox(height: 12),
           _SettingsCard(
+            cardColor: cardColor,
+            textColor: textColor,
             child: Column(
               children: [
                 _InfoTile(
-                  icon: Icons.restaurant,
-                  iconColor: kTerracotta,
+                  icon: Icons.restaurant_rounded,
+                  iconColor: kPrimary,
                   title: 'App Version',
-                  value: '1.0.0 (Prototype)',
+                  value: '1.0.0',
+                  textColor: textColor,
                 ),
-                Divider(color: kDeepBrown.withAlpha(20)),
+                Divider(color: dividerColor),
                 _InfoTile(
-                  icon: Icons.code,
-                  iconColor: kSage,
+                  icon: Icons.code_rounded,
+                  iconColor: kSecondary,
                   title: 'Built with',
                   value: 'Flutter & Dart',
+                  textColor: textColor,
                 ),
-                Divider(color: kDeepBrown.withAlpha(20)),
+                Divider(color: dividerColor),
                 _InfoTile(
-                  icon: Icons.favorite,
-                  iconColor: Colors.red,
+                  icon: Icons.favorite_rounded,
+                  iconColor: kAccent,
                   title: 'Made for',
                   value: 'Reducing Food Waste',
+                  textColor: textColor,
                 ),
               ],
             ),
@@ -184,26 +222,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 18),
               decoration: BoxDecoration(
-                color: kCardBg,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.red.withAlpha(100)),
+                border: Border.all(color: kAccent.withAlpha(100)),
                 boxShadow: [
                   BoxShadow(
-                    color: kDeepBrown.withAlpha(10),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: textColor.withAlpha(6),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.restore, color: Colors.red.withAlpha(200)),
+                  Icon(Icons.restore_rounded, color: kAccent),
                   const SizedBox(width: 10),
                   Text(
                     'Reset All Data',
                     style: TextStyle(
-                      color: Colors.red.withAlpha(200),
+                      color: kAccent,
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
                     ),
@@ -222,9 +260,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          isDark ? '🌙 Dark mode coming in v2.0!' : '☀️ Light mode active',
+          isDark ? '🌙 Dark mode enabled' : '☀️ Light mode enabled',
         ),
-        backgroundColor: isDark ? Colors.indigo : kSage,
+        backgroundColor: isDark ? Colors.indigo : kSecondary,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -236,33 +274,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Text(
           enabled ? '🔊 Haptic feedback enabled' : '🔇 Haptic feedback disabled',
         ),
-        backgroundColor: enabled ? kSage : kDeepBrown.withAlpha(180),
+        backgroundColor: enabled ? kSecondary : kText.withAlpha(180),
         duration: const Duration(seconds: 1),
       ),
     );
   }
 
   void _showResetDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: kCardBg,
+        backgroundColor: cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
+        title: Text(
           'Reset All Data?',
           style: TextStyle(
-            color: kDeepBrown,
+            color: textColor,
             fontWeight: FontWeight.w700,
           ),
         ),
         content: Text(
           'This will clear all your scanned scraps and saved recipes.',
-          style: TextStyle(color: kDeepBrown.withAlpha(160)),
+          style: TextStyle(color: textColor.withAlpha(160)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel', style: TextStyle(color: kDeepBrown)),
+            child: Text('Cancel', style: TextStyle(color: textColor)),
           ),
           TextButton(
             onPressed: () {
@@ -270,7 +312,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Data reset (Demo: data persists)'),
-                  backgroundColor: kTerracotta,
+                  backgroundColor: kPrimary,
                 ),
               );
             },
@@ -286,24 +328,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.icon});
+  const _SectionHeader({required this.title, required this.icon, required this.textColor});
 
   final String title;
   final IconData icon;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: kDeepBrown.withAlpha(100)),
-        const SizedBox(width: 8),
+        Icon(icon, size: 20, color: kPrimary),
+        const SizedBox(width: 10),
         Text(
           title.toUpperCase(),
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: kDeepBrown.withAlpha(100),
-            letterSpacing: 1,
+            color: textColor.withAlpha(120),
+            letterSpacing: 1.2,
           ),
         ),
       ],
@@ -312,21 +355,23 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _SettingsCard extends StatelessWidget {
-  const _SettingsCard({required this.child});
+  const _SettingsCard({required this.child, required this.cardColor, required this.textColor});
 
   final Widget child;
+  final Color cardColor;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: kCardBg,
+        color: cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: kDeepBrown.withAlpha(15),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: textColor.withAlpha(6),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -343,6 +388,7 @@ class _ToggleTile extends StatelessWidget {
     required this.subtitle,
     required this.value,
     required this.onChanged,
+    required this.textColor,
   });
 
   final IconData icon;
@@ -351,40 +397,43 @@ class _ToggleTile extends StatelessWidget {
   final String subtitle;
   final bool value;
   final ValueChanged<bool> onChanged;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: iconColor.withAlpha(30),
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: [iconColor.withAlpha(20), iconColor.withAlpha(10)],
+              ),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, size: 22, color: iconColor),
+            child: Icon(icon, size: 24, color: iconColor),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: kDeepBrown,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: kDeepBrown.withAlpha(120),
+                    fontSize: 13,
+                    color: textColor.withAlpha(140),
                   ),
                 ),
               ],
@@ -393,9 +442,9 @@ class _ToggleTile extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeTrackColor: kSage.withAlpha(50),
+            activeTrackColor: kPrimary.withAlpha(50),
             thumbColor: WidgetStateProperty.resolveWith((states) =>
-                states.contains(WidgetState.selected) ? kSage : Colors.white),
+                states.contains(WidgetState.selected) ? kPrimary : Colors.white),
           ),
         ],
       ),
@@ -409,35 +458,39 @@ class _InfoTile extends StatelessWidget {
     required this.iconColor,
     required this.title,
     required this.value,
+    required this.textColor,
   });
 
   final IconData icon;
   final Color iconColor;
   final String title;
   final String value;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: iconColor.withAlpha(30),
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: [iconColor.withAlpha(20), iconColor.withAlpha(10)],
+              ),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, size: 22, color: iconColor),
+            child: Icon(icon, size: 24, color: iconColor),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 16),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: kDeepBrown,
+                color: textColor,
               ),
             ),
           ),
@@ -445,8 +498,8 @@ class _InfoTile extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: 14,
-              color: kDeepBrown.withAlpha(120),
-              fontWeight: FontWeight.w500,
+              color: textColor.withAlpha(140),
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

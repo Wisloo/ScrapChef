@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
 
-// Warm earthy colors
-const Color kTerracotta = Color(0xFFC17A4A);
-const Color kSage = Color(0xFF7A9E7E);
-const Color kDeepBrown = Color(0xFF3D2914);
-const Color kCream = Color(0xFFFAF7F2);
+// Modern color palette
+const Color kPrimary = Color(0xFF6C5CE7);
+const Color kPrimaryLight = Color(0xFFA29BFE);
+const Color kSecondary = Color(0xFF00CEC9);
+const Color kAccent = Color(0xFFFD79A8);
+const Color kBackground = Color(0xFFF8F9FA);
+const Color kSurface = Color(0xFFFFFFFF);
+const Color kText = Color(0xFF2D3436);
+const Color kTextLight = Color(0xFF636E72);
+const Color kDivider = Color(0xFFDFE6E9);
+
+// Dark theme colors
+const Color kDarkBackground = Color(0xFF121212);
+const Color kDarkSurface = Color(0xFF1E1E1E);
+const Color kDarkText = Color(0xFFE0E0E0);
+const Color kDarkTextLight = Color(0xFFB0B0B0);
+const Color kDarkDivider = Color(0xFF2C2C2C);
+
+// Vegetable-specific colors (kept for mascot designs)
 const Color kCarrotOrange = Color(0xFFFF8C42);
 const Color kTomatoRed = Color(0xFFE85D4E);
 const Color kBroccoliGreen = Color(0xFF5A9A65);
@@ -19,15 +33,19 @@ class VeggieMascot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: kCream,
+        color: bgColor,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: kDeepBrown.withAlpha(20),
+            color: textColor.withAlpha(20),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -135,7 +153,7 @@ class _SadCarrotPainter extends CustomPainter {
     );
 
     // Carrot lines (texture)
-    paint.color = kTerracotta.withAlpha(80);
+    paint.color = kAccent.withAlpha(80);
     paint.style = PaintingStyle.stroke;
     paint.strokeWidth = 2;
     canvas.drawLine(
@@ -151,7 +169,7 @@ class _SadCarrotPainter extends CustomPainter {
 
     // Carrot top leaves (cuter, fuller)
     paint.style = PaintingStyle.fill;
-    paint.color = kSage;
+    paint.color = kSecondary;
     // Left leaf
     final leftLeaf = Path()
       ..moveTo(center.dx - 5, center.dy - 32)
@@ -180,19 +198,19 @@ class _SadCarrotPainter extends CustomPainter {
     canvas.drawCircle(Offset(center.dx + 15, center.dy + 2), 6, paint);
 
     // Sad eyes (bigger, cuter)
-    paint.color = kDeepBrown;
+    paint.color = kText;
     // Left eye
     canvas.drawCircle(Offset(center.dx - 10, center.dy - 8), 5, paint);
     paint.color = Colors.white;
     canvas.drawCircle(Offset(center.dx - 11, center.dy - 10), 2, paint);
-    paint.color = kDeepBrown;
+    paint.color = kText;
     // Right eye
     canvas.drawCircle(Offset(center.dx + 10, center.dy - 8), 5, paint);
     paint.color = Colors.white;
     canvas.drawCircle(Offset(center.dx + 9, center.dy - 10), 2, paint);
 
     // Sad mouth (small wobbly frown)
-    paint.color = kDeepBrown;
+    paint.color = kText;
     paint.style = PaintingStyle.stroke;
     paint.strokeWidth = 2.5;
     paint.strokeCap = StrokeCap.round;
@@ -248,7 +266,7 @@ class _HappyTomatoPainter extends CustomPainter {
     );
 
     // Stem (green, thicker)
-    paint.color = kSage;
+    paint.color = kSecondary;
     final stemPath = Path()
       ..moveTo(center.dx - 4, center.dy - 35)
       ..lineTo(center.dx - 10, center.dy - 55)

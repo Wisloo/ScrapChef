@@ -30,6 +30,28 @@ class ScrapItem {
   final String source;  // 'camera', 'manual-entry', or 'manual-verification'
   final double confidence;
   final bool manualCorrection;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'label': label,
+      'weightGrams': weightGrams,
+      'loggedAt': loggedAt.toIso8601String(),
+      'source': source,
+      'confidence': confidence,
+      'manualCorrection': manualCorrection,
+    };
+  }
+
+  factory ScrapItem.fromJson(Map<String, dynamic> json) {
+    return ScrapItem(
+      label: json['label'] as String? ?? '',
+      weightGrams: json['weightGrams'] as double?,
+      loggedAt: DateTime.tryParse(json['loggedAt'] as String? ?? '') ?? DateTime.now(),
+      source: json['source'] as String? ?? '',
+      confidence: json['confidence'] as double? ?? 0.0,
+      manualCorrection: json['manualCorrection'] as bool? ?? false,
+    );
+  }
 }
 
 class RecipeSuggestion {

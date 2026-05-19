@@ -46,14 +46,14 @@ The Gemini image classifier still requires an API key. To enable image scanning:
 
 **For Development (Local Testing):**
 ```bash
-flutter run --dart-define=GEMINI_API_KEY=your_api_key_here
+flutter run --dart-define=GEMINI_API_KEY=AIzaSyCI8F-CTt-oOxhTVlW9TxPJmGPRUlbN8Fw
 ```
 
 **For APK/iOS Build:**
 ```bash
-flutter build apk --dart-define=GEMINI_API_KEY=your_api_key_here
+flutter build apk --dart-define=GEMINI_API_KEY=AIzaSyCI8F-CTt-oOxhTVlW9TxPJmGPRUlbN8Fw
 # or
-flutter build ios --dart-define=GEMINI_API_KEY=your_api_key_here
+flutter build ios --dart-define=GEMINI_API_KEY=AIzaSyCI8F-CTt-oOxhTVlW9TxPJmGPRUlbN8Fw
 ```
 
 Get your API key from [Google AI Studio](https://aistudio.google.com/apikey)

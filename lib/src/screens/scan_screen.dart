@@ -7,14 +7,23 @@ import 'package:image_picker/image_picker.dart';
 
 import '../state/app_state.dart';
 
-// Warm earthy solid color palette
-const Color kCream = Color(0xFFF6F1E8);
-const Color kTerracotta = Color(0xFFB86137);
-const Color kSage = Color(0xFF58765C);
-const Color kDeepBrown = Color(0xFF2D1F16);
-const Color kCardBg = Colors.white;
-const Color kLightSage = Color(0xFFE5EFE4);
-const Color kLightTerracotta = Color(0xFFF3E1D3);
+// Modern color palette
+const Color kPrimary = Color(0xFF6C5CE7);
+const Color kPrimaryLight = Color(0xFFA29BFE);
+const Color kSecondary = Color(0xFF00CEC9);
+const Color kAccent = Color(0xFFFD79A8);
+const Color kBackground = Color(0xFFF8F9FA);
+const Color kSurface = Color(0xFFFFFFFF);
+const Color kText = Color(0xFF2D3436);
+const Color kTextLight = Color(0xFF636E72);
+const Color kDivider = Color(0xFFDFE6E9);
+
+// Dark theme colors
+const Color kDarkBackground = Color(0xFF121212);
+const Color kDarkSurface = Color(0xFF1E1E1E);
+const Color kDarkText = Color(0xFFE0E0E0);
+const Color kDarkTextLight = Color(0xFFB0B0B0);
+const Color kDarkDivider = Color(0xFF2C2C2C);
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key, required this.appState});
@@ -85,13 +94,45 @@ class _ScanScreenState extends State<ScanScreen> {
         });
         HapticFeedback.mediumImpact();
       } else {
-        widget.appState.handleAutoClassification(
-          predictedLabel,
-          confidence: confidence,
-        );
-        HapticFeedback.mediumImpact();
+        // Show popup with classified result
         if (mounted) {
-          Navigator.of(context).pop(widget.appState.lastOutcome);
+          await showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Food Scrap Detected'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.eco_rounded, size: 48, color: kSecondary),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Detected: $predictedLabel',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              actions: [
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    widget.appState.handleAutoClassification(
+                      predictedLabel,
+                      confidence: confidence,
+                    );
+                    HapticFeedback.mediumImpact();
+                    if (mounted) {
+                      Navigator.of(context).pop(widget.appState.lastOutcome);
+                    }
+                  },
+                  child: const Text('Continue'),
+                ),
+              ],
+            ),
+          );
         }
       }
     } catch (e) {
@@ -125,23 +166,28 @@ class _ScanScreenState extends State<ScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? kDarkBackground : kBackground;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
     return Scaffold(
-      backgroundColor: kCream,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: kCream,
+        backgroundColor: bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: kDeepBrown),
+          icon: const Icon(Icons.arrow_back_rounded, color: kPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            color: kCardBg,
+            color: cardColor,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: kDeepBrown.withAlpha(15),
+                color: textColor.withAlpha(15),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -149,8 +195,8 @@ class _ScanScreenState extends State<ScanScreen> {
           ),
           child: Text(
             _batchMode ? 'Batch Mode' : 'Scan Scrap',
-            style: const TextStyle(
-              color: kDeepBrown,
+            style: TextStyle(
+              color: textColor,
               fontWeight: FontWeight.w700,
               fontSize: 16,
             ),
@@ -161,11 +207,14 @@ class _ScanScreenState extends State<ScanScreen> {
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: _batchMode ? kLightTerracotta : kCardBg,
+              gradient: _batchMode
+                  ? LinearGradient(colors: [kPrimary.withAlpha(30), kPrimaryLight.withAlpha(15)])
+                  : null,
+              color: _batchMode ? null : cardColor,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: kDeepBrown.withAlpha(15),
+                  color: textColor.withAlpha(15),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -175,9 +224,9 @@ class _ScanScreenState extends State<ScanScreen> {
               icon: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: Icon(
-                  _batchMode ? Icons.layers : Icons.layers_outlined,
+                  _batchMode ? Icons.layers_rounded : Icons.layers_outlined,
                   key: ValueKey<bool>(_batchMode),
-                  color: _batchMode ? kTerracotta : kDeepBrown,
+                  color: _batchMode ? kPrimary : textColor,
                 ),
               ),
               tooltip: _batchMode ? 'Batch mode on' : 'Enable batch mode',
@@ -209,11 +258,11 @@ class _ScanScreenState extends State<ScanScreen> {
           ? Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               decoration: BoxDecoration(
-                color: kSage,
+                gradient: LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)]),
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: kSage.withAlpha(60),
+                    color: kSecondary.withAlpha(60),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -224,7 +273,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.check, color: Colors.white, size: 24),
+                    const Icon(Icons.check_circle_rounded, color: Colors.white, size: 24),
                     const SizedBox(width: 8),
                     Text(
                       'Done (${_batchLabels.length})',
@@ -259,15 +308,20 @@ class _CameraOptions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? kDarkBackground : kBackground;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            kCream,
-            kLightTerracotta.withAlpha(100),
-            kCream,
+            bgColor,
+            kPrimary.withAlpha(10),
+            bgColor,
           ],
         ),
       ),
@@ -282,30 +336,32 @@ class _CameraOptions extends StatelessWidget {
                 width: 140,
                 height: 140,
                 decoration: BoxDecoration(
-                  color: kLightTerracotta,
+                  gradient: LinearGradient(
+                    colors: [kPrimary.withAlpha(20), kPrimaryLight.withAlpha(10)],
+                  ),
                   shape: BoxShape.circle,
-                  border: Border.all(color: kTerracotta.withAlpha(100), width: 3),
+                  border: Border.all(color: kPrimary.withAlpha(30), width: 3),
                   boxShadow: [
                     BoxShadow(
-                      color: kTerracotta.withAlpha(40),
+                      color: kPrimary.withAlpha(40),
                       blurRadius: 30,
                       spreadRadius: 5,
                     ),
                   ],
                 ),
                 child: const Icon(
-                  Icons.camera_alt,
+                  Icons.camera_alt_rounded,
                   size: 60,
-                  color: kTerracotta,
+                  color: kPrimary,
                 ),
               ),
               const SizedBox(height: 32),
               Text(
                 batchMode ? 'Batch Scan Mode' : 'Capture Scrap',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
-                  color: kDeepBrown,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -316,7 +372,7 @@ class _CameraOptions extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
-                  color: kDeepBrown.withAlpha(140),
+                  color: textColor.withAlpha(140),
                   height: 1.4,
                 ),
               ),
@@ -325,19 +381,21 @@ class _CameraOptions extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: kSage.withAlpha(30),
+                    gradient: LinearGradient(
+                      colors: [kSecondary.withAlpha(30), kSecondary.withAlpha(15)],
+                    ),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: kSage.withAlpha(80)),
+                    border: Border.all(color: kSecondary.withAlpha(50)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.layers, size: 16, color: kSage),
+                      const Icon(Icons.layers_rounded, size: 16, color: kSecondary),
                       const SizedBox(width: 6),
                       Text(
                         '$batchCount items queued',
                         style: const TextStyle(
-                          color: kSage,
+                          color: kSecondary,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -354,11 +412,11 @@ class _CameraOptions extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   decoration: BoxDecoration(
-                    color: kTerracotta,
+                    gradient: LinearGradient(colors: [kPrimary, kPrimaryLight]),
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: kTerracotta.withAlpha(50),
+                        color: kPrimary.withAlpha(50),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                       ),
@@ -367,7 +425,7 @@ class _CameraOptions extends StatelessWidget {
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.camera_alt, color: Colors.white, size: 26),
+                      Icon(Icons.camera_alt_rounded, color: Colors.white, size: 26),
                       SizedBox(width: 12),
                       Text(
                         'Take Photo',
@@ -389,12 +447,12 @@ class _CameraOptions extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   decoration: BoxDecoration(
-                    color: kCardBg,
+                    color: cardColor,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: kDeepBrown.withAlpha(60)),
+                    border: Border.all(color: textColor.withAlpha(20)),
                     boxShadow: [
                       BoxShadow(
-                        color: kDeepBrown.withAlpha(15),
+                        color: textColor.withAlpha(15),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -403,12 +461,12 @@ class _CameraOptions extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.photo_library, color: kDeepBrown.withAlpha(180), size: 22),
+                      Icon(Icons.photo_library_rounded, color: textColor.withAlpha(180), size: 22),
                       const SizedBox(width: 10),
                       Text(
                         'Choose from Gallery',
                         style: TextStyle(
-                          color: kDeepBrown.withAlpha(180),
+                          color: textColor.withAlpha(180),
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
                         ),
@@ -422,11 +480,11 @@ class _CameraOptions extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: kCardBg,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: kDeepBrown.withAlpha(10),
+                      color: textColor.withAlpha(10),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -435,14 +493,14 @@ class _CameraOptions extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.info_outline, size: 18, color: kSage),
+                    const Icon(Icons.info_outline_rounded, size: 18, color: kSecondary),
                     const SizedBox(width: 10),
                     Flexible(
                       child: Text(
                         'Photos are processed locally on your device',
                         style: TextStyle(
                           fontSize: 13,
-                          color: kDeepBrown.withAlpha(140),
+                          color: textColor.withAlpha(140),
                         ),
                       ),
                     ),
@@ -470,6 +528,10 @@ class _ImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -484,7 +546,7 @@ class _ImagePreview extends StatelessWidget {
             height: 280,
             decoration: BoxDecoration(
               border: Border.all(
-                color: kTerracotta.withAlpha(150),
+                color: kPrimary.withAlpha(150),
                 width: 2,
               ),
               borderRadius: BorderRadius.circular(20),
@@ -535,13 +597,13 @@ class _ImagePreview extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: kDeepBrown.withAlpha(180),
+                color: textColor.withAlpha(180),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.center_focus_strong, color: Colors.white, size: 18),
+                  Icon(Icons.center_focus_strong_rounded, color: Colors.white, size: 18),
                   SizedBox(width: 8),
                   Text(
                     'Position scrap in center',
@@ -569,7 +631,7 @@ class _ImagePreview extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  kDeepBrown.withAlpha(200),
+                  textColor.withAlpha(200),
                 ],
               ),
             ),
@@ -589,18 +651,18 @@ class _ImagePreview extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
-                      color: kCardBg.withAlpha(240),
+                      color: cardColor.withAlpha(240),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.auto_awesome, size: 18, color: kTerracotta),
-                        SizedBox(width: 8),
+                        const Icon(Icons.auto_awesome_rounded, size: 18, color: kPrimary),
+                        const SizedBox(width: 8),
                         Text(
                           'Confirm the scrap type',
                           style: TextStyle(
-                            color: kDeepBrown,
+                            color: textColor,
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
                           ),
@@ -617,22 +679,22 @@ class _ImagePreview extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             decoration: BoxDecoration(
-                              color: kCardBg.withAlpha(230),
+                              color: cardColor.withAlpha(230),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.refresh,
-                                  color: kDeepBrown.withAlpha(200),
+                                  Icons.refresh_rounded,
+                                  color: textColor.withAlpha(200),
                                   size: 20,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Retake',
                                   style: TextStyle(
-                                    color: kDeepBrown.withAlpha(200),
+                                    color: textColor.withAlpha(200),
                                     fontWeight: FontWeight.w600,
                                     fontSize: 15,
                                   ),
@@ -649,11 +711,11 @@ class _ImagePreview extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             decoration: BoxDecoration(
-                              color: kSage,
+                              gradient: LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)]),
                               borderRadius: BorderRadius.circular(14),
                               boxShadow: [
                                 BoxShadow(
-                                  color: kSage.withAlpha(60),
+                                  color: kSecondary.withAlpha(60),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
@@ -662,7 +724,7 @@ class _ImagePreview extends StatelessWidget {
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.check, color: Colors.white, size: 20),
+                                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
                                 SizedBox(width: 8),
                                 Text(
                                   'Use Photo',
@@ -700,7 +762,7 @@ class _CornerBracket extends StatelessWidget {
   Widget build(BuildContext context) {
     const double size = 40;
     const double thickness = 4;
-    const Color color = kTerracotta;
+    const Color color = kPrimary;
 
     return SizedBox(
       width: size,
@@ -782,15 +844,19 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
     return SafeArea(
       child: Container(
         margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: kCardBg,
+          color: cardColor,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: kDeepBrown.withAlpha(30),
+              color: textColor.withAlpha(30),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -807,7 +873,7 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: kDeepBrown.withAlpha(60),
+                    color: textColor.withAlpha(60),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -815,10 +881,10 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
               const SizedBox(height: 20),
               Text(
                 'What did you capture?',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: kDeepBrown,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 6),
@@ -827,7 +893,7 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
-                  color: kDeepBrown.withAlpha(140),
+                  color: textColor.withAlpha(140),
                   height: 1.4,
                 ),
               ),
@@ -854,10 +920,13 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSelected ? kSage : kCardBg,
+                          gradient: isSelected
+                              ? LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)])
+                              : null,
+                          color: isSelected ? null : textColor.withAlpha(10),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? kSage : kDeepBrown.withAlpha(30),
+                            color: isSelected ? kSecondary : textColor.withAlpha(30),
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -867,7 +936,7 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: isSelected ? Colors.white : kDeepBrown,
+                            color: isSelected ? Colors.white : textColor,
                           ),
                         ),
                       ),
@@ -884,23 +953,23 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         decoration: BoxDecoration(
-                          color: kCardBg.withAlpha(230),
+                          color: cardColor.withAlpha(230),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: kDeepBrown.withAlpha(60)),
+                          border: Border.all(color: textColor.withAlpha(20)),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.close,
-                              color: kDeepBrown.withAlpha(200),
+                              Icons.close_rounded,
+                              color: textColor.withAlpha(200),
                               size: 20,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'Cancel',
                               style: TextStyle(
-                                color: kDeepBrown.withAlpha(200),
+                                color: textColor.withAlpha(200),
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
                               ),
@@ -922,21 +991,24 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         decoration: BoxDecoration(
-                          color: selectedLabel != null ? kSage : kCardBg.withAlpha(230),
+                          gradient: selectedLabel != null
+                              ? LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)])
+                              : null,
+                          color: selectedLabel != null ? null : cardColor.withAlpha(230),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: selectedLabel != null ? kSage : kDeepBrown.withAlpha(60),
+                            color: selectedLabel != null ? kSecondary : textColor.withAlpha(20),
                           ),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.check, color: Colors.white, size: 20),
+                            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
                             const SizedBox(width: 8),
                             Text(
                               'Confirm',
                               style: TextStyle(
-                                color: selectedLabel != null ? Colors.white : kDeepBrown.withAlpha(200),
+                                color: selectedLabel != null ? Colors.white : textColor.withAlpha(200),
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
                               ),
@@ -967,15 +1039,19 @@ class _BatchPreviewSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
     return SafeArea(
       child: Container(
         margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: kCardBg,
+          color: cardColor,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: kDeepBrown.withAlpha(30),
+              color: textColor.withAlpha(30),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -992,7 +1068,7 @@ class _BatchPreviewSheet extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: kDeepBrown.withAlpha(60),
+                    color: textColor.withAlpha(60),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1003,29 +1079,31 @@ class _BatchPreviewSheet extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: kSage.withAlpha(30),
+                      gradient: LinearGradient(
+                        colors: [kSecondary.withAlpha(30), kSecondary.withAlpha(15)],
+                      ),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.layers, color: kSage, size: 26),
+                    child: const Icon(Icons.layers_rounded, color: kSecondary, size: 26),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Batch Preview',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: kDeepBrown,
+                            color: textColor,
                           ),
                         ),
                         Text(
                           '${batchLabels.length} items ready to save',
                           style: TextStyle(
                             fontSize: 14,
-                            color: kDeepBrown.withAlpha(140),
+                            color: textColor.withAlpha(140),
                           ),
                         ),
                       ],
@@ -1044,9 +1122,9 @@ class _BatchPreviewSheet extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: kCream,
+                          color: textColor.withAlpha(10),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: kDeepBrown.withAlpha(20)),
+                          border: Border.all(color: textColor.withAlpha(20)),
                         ),
                         child: Row(
                           children: [
@@ -1054,16 +1132,16 @@ class _BatchPreviewSheet extends StatelessWidget {
                               width: 10,
                               height: 10,
                               decoration: const BoxDecoration(
-                                color: kSage,
+                                color: kSecondary,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 12),
                             Text(
                               batchLabels[index],
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: kDeepBrown,
+                                color: textColor,
                                 fontSize: 15,
                               ),
                             ),
@@ -1079,16 +1157,18 @@ class _BatchPreviewSheet extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: kLightTerracotta,
+                    gradient: LinearGradient(
+                      colors: [kPrimary.withAlpha(15), kPrimaryLight.withAlpha(8)],
+                    ),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: kTerracotta.withAlpha(60)),
+                    border: Border.all(color: kPrimary.withAlpha(30)),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        Icons.restaurant,
+                        Icons.restaurant_rounded,
                         size: 20,
-                        color: kTerracotta.withAlpha(200),
+                        color: kPrimary.withAlpha(200),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -1096,7 +1176,7 @@ class _BatchPreviewSheet extends StatelessWidget {
                           '${suggestions.length} recipe ideas found!',
                           style: TextStyle(
                             fontSize: 14,
-                            color: kDeepBrown.withAlpha(160),
+                            color: textColor.withAlpha(160),
                           ),
                         ),
                       ),
@@ -1113,15 +1193,15 @@ class _BatchPreviewSheet extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         decoration: BoxDecoration(
-                          color: kCream,
+                          color: textColor.withAlpha(10),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: kDeepBrown.withAlpha(40)),
+                          border: Border.all(color: textColor.withAlpha(20)),
                         ),
                         child: Text(
                           'Continue',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: kDeepBrown.withAlpha(180),
+                            color: textColor.withAlpha(180),
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
                           ),
@@ -1139,11 +1219,11 @@ class _BatchPreviewSheet extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         decoration: BoxDecoration(
-                          color: kSage,
+                          gradient: LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)]),
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: kSage.withAlpha(50),
+                              color: kSecondary.withAlpha(50),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),

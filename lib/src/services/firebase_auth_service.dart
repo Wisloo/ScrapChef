@@ -9,6 +9,8 @@ class FirebaseAuthService {
 
   String? get userEmail => currentUser?.email;
 
+  String? get userId => currentUser?.uid;
+
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   /// Sign up with email and password

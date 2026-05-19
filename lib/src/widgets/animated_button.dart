@@ -3,10 +3,23 @@ import 'package:flutter/services.dart';
 
 import '../services/sound_service.dart';
 
-// Warm earthy colors
-const Color kTerracotta = Color(0xFFC17A4A);
-const Color kSage = Color(0xFF7A9E7E);
-const Color kDeepBrown = Color(0xFF3D2914);
+// Modern color palette
+const Color kPrimary = Color(0xFF6C5CE7);
+const Color kPrimaryLight = Color(0xFFA29BFE);
+const Color kSecondary = Color(0xFF00CEC9);
+const Color kAccent = Color(0xFFFD79A8);
+const Color kBackground = Color(0xFFF8F9FA);
+const Color kSurface = Color(0xFFFFFFFF);
+const Color kText = Color(0xFF2D3436);
+const Color kTextLight = Color(0xFF636E72);
+const Color kDivider = Color(0xFFDFE6E9);
+
+// Dark theme colors
+const Color kDarkBackground = Color(0xFF121212);
+const Color kDarkSurface = Color(0xFF1E1E1E);
+const Color kDarkText = Color(0xFFE0E0E0);
+const Color kDarkTextLight = Color(0xFFB0B0B0);
+const Color kDarkDivider = Color(0xFF2C2C2C);
 
 /// Animated button with scale press effect + ripple
 class AnimatedButton extends StatefulWidget {
@@ -14,7 +27,7 @@ class AnimatedButton extends StatefulWidget {
     super.key,
     required this.onPressed,
     required this.child,
-    this.color = kTerracotta,
+    this.color = kPrimary,
     this.height = 56,
     this.borderRadius = 16,
     this.shadow = true,
@@ -145,7 +158,7 @@ class AnimatedSecondaryButton extends StatefulWidget {
     super.key,
     required this.onPressed,
     required this.child,
-    this.color = kDeepBrown,
+    this.color = kText,
     this.height = 56,
     this.borderRadius = 16,
   });
@@ -258,7 +271,7 @@ class AnimatedIconButton extends StatefulWidget {
     required this.onPressed,
     required this.icon,
     this.backgroundColor,
-    this.iconColor = kDeepBrown,
+    this.iconColor = kText,
     this.size = 48,
   });
 
@@ -320,6 +333,9 @@ class _AnimatedIconButtonState extends State<AnimatedIconButton>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? kDarkText : kText;
+
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
@@ -334,11 +350,11 @@ class _AnimatedIconButtonState extends State<AnimatedIconButton>
               width: widget.size,
               height: widget.size,
               decoration: BoxDecoration(
-                color: widget.backgroundColor ?? Colors.white,
+                color: widget.backgroundColor ?? (isDark ? kDarkSurface : kSurface),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: kDeepBrown.withAlpha(15),
+                    color: textColor.withAlpha(15),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),

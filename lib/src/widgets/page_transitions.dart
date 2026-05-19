@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Warm earthy colors
-const Color kTerracotta = Color(0xFFC17A4A);
-
 /// Custom page route with smooth slide and fade transition
 class SmoothPageRoute<T> extends PageRouteBuilder<T> {
   SmoothPageRoute({
