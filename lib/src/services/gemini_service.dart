@@ -4,12 +4,16 @@ import 'package:flutter/services.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class GeminiService {
-  final GenerativeModel _model;
+  late final GenerativeModel _model;
+  static const String _defaultApiKey = 'AIzaSyBrwRO0hYMStVhsfKFLYaSmpVRGpfFgGvw';
 
-  GeminiService() : _model = GenerativeModel(
-          model: 'gemini-2.5-flash', // Use gemini-2.5-flash for multimodal tasks
-          apiKey: 'AIzaSyBrwRO0hYMStVhsfKFLYaSmpVRGpfFgGvw',
-        );
+  GeminiService({String? apiKey}) {
+    final key = apiKey ?? _defaultApiKey;
+    _model = GenerativeModel(
+      model: 'gemini-1.5-pro', // Use pro model for better availability
+      apiKey: key,
+    );
+  }
 
   Future<String> analyzeFoodScraps(String imagePath) async {
     final imageFile = File(imagePath);
@@ -27,21 +31,43 @@ class GeminiService {
       ]),
     ];
 
-    try {
-      final response = await _model.generateContent(content);
-      final text = response.text ?? 'No analysis found.';
-      
-      // Extract JSON from markdown code blocks if present
-      final jsonPattern = RegExp(r'```json\s*([\s\S]*?)\s*```');
-      final match = jsonPattern.firstMatch(text);
-      
-      if (match != null) {
-        return match.group(1) ?? text;
+    // Retry logic with exponential backoff
+    int maxRetries = 3;
+    Duration delay = const Duration(seconds: 1);
+
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        final response = await _model.generateContent(content);
+        final text = response.text ?? 'No analysis found.';
+        
+        // Extract JSON from markdown code blocks if present
+        final jsonPattern = RegExp(r'```json\s*([\s\S]*?)\s*```');
+        final match = jsonPattern.firstMatch(text);
+        
+        if (match != null) {
+          return match.group(1) ?? text;
+        }
+        
+        return text;
+      } catch (e) {
+        if (attempt == maxRetries - 1) {
+          // Final attempt failed
+          if (e.toString().contains('resource_exhausted') || 
+              e.toString().contains('model provider')) {
+            return 'Error: Gemini API is currently overloaded. Please try again in a few moments.';
+          }
+          if (e.toString().contains('API key')) {
+            return 'Error: Invalid API key. Please check your Gemini API key configuration.';
+          }
+          return 'Error during API call: $e';
+        }
+        
+        // Wait before retrying with exponential backoff
+        await Future.delayed(delay);
+        delay *= 2;
       }
-      
-      return text;
-    } catch (e) {
-      return 'Error during API call: $e';
     }
+
+    return 'Error: Failed after $maxRetries attempts';
   }
 }

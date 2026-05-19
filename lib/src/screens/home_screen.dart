@@ -11,23 +11,23 @@ import 'scan_screen.dart';
 import 'settings_screen.dart';
 import 'splash_screen.dart';
 
-// Modern color palette
-const Color kPrimary = Color(0xFF6C5CE7);
-const Color kPrimaryLight = Color(0xFFA29BFE);
-const Color kSecondary = Color(0xFF00CEC9);
-const Color kAccent = Color(0xFFFD79A8);
-const Color kBackground = Color(0xFFF8F9FA);
-const Color kSurface = Color(0xFFFFFFFF);
-const Color kText = Color(0xFF2D3436);
-const Color kTextLight = Color(0xFF636E72);
-const Color kDivider = Color(0xFFDFE6E9);
+// Earthy color palette for food scrap theme
+const Color kPrimary = Color(0xFF8B7355); // Warm earth brown
+const Color kPrimaryLight = Color(0xFFA89070); // Light earth brown
+const Color kSecondary = Color(0xFF6B8E23); // Olive green
+const Color kAccent = Color(0xFFD2691E); // Chocolate orange
+const Color kBackground = Color(0xFFF5F0E6); // Creamy beige
+const Color kSurface = Color(0xFFFFFFFF); // White
+const Color kText = Color(0xFF4A3F35); // Dark earth brown
+const Color kTextLight = Color(0xFF6B5D52); // Medium earth brown
+const Color kDivider = Color(0xFFE0D5C5); // Light beige
 
-// Dark theme colors
-const Color kDarkBackground = Color(0xFF121212);
-const Color kDarkSurface = Color(0xFF1E1E1E);
-const Color kDarkText = Color(0xFFE0E0E0);
-const Color kDarkTextLight = Color(0xFFB0B0B0);
-const Color kDarkDivider = Color(0xFF2C2C2C);
+// Dark theme colors (earthy dark mode)
+const Color kDarkBackground = Color(0xFF2A2520); // Dark earth brown
+const Color kDarkSurface = Color(0xFF3A3530); // Dark brown surface
+const Color kDarkText = Color(0xFFE8E0D8); // Light cream text
+const Color kDarkTextLight = Color(0xFFB8B0A8); // Medium cream text
+const Color kDarkDivider = Color(0xFF4A4540); // Dark divider
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.appState, required this.onThemeChanged});
@@ -136,279 +136,301 @@ class _HomeScreenState extends State<HomeScreen>
       return SplashScreen(onComplete: _onSplashComplete);
     }
 
-    final outcome = widget.appState.lastOutcome;
-    final inventory = widget.appState.inventory;
-    final suggestions = widget.appState.activeRecipeSuggestions;
-    final latestBatchLabels = widget.appState.latestBatchLabels;
-    final itemsLogged = widget.appState.itemsLogged;
-    final estimatedSavings = widget.appState.estimatedSavings;
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? kDarkBackground : kBackground;
     final cardColor = isDark ? kDarkSurface : kSurface;
     final textColor = isDark ? kDarkText : kText;
-    final textLightColor = isDark ? kDarkTextLight : kTextLight;
-    final dividerColor = isDark ? kDarkDivider : kDivider;
 
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        backgroundColor: bgColor,
-        floatingActionButton: FloatingActionButton(
-          onPressed: _showHelp,
-          backgroundColor: kPrimary,
-          elevation: 8,
-          child: const Icon(Icons.help_outline, color: Colors.white),
-        ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: isDark
-                ? null
-                : const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      kBackground,
-                      kSurface,
-                    ],
+    final inventory = widget.appState.inventory;
+    final savedRecipes = widget.appState.savedRecipes;
+    final itemsLogged = inventory.length;
+    final estimatedSavings = itemsLogged * 15.0;
+
+    final displaySuggestions = _useBatchMatching
+        ? widget.appState.suggestRecipesForBatch(inventory)
+        : widget.appState.suggestRecipesForScrap(inventory.lastOrNull);
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              floating: true,
+              backgroundColor: bgColor,
+              elevation: 0,
+              title: Row(
+                children: [
+                  Text(
+                    'ScrapChef',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: textColor,
+                    ),
                   ),
-          ),
-          child: NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 50, 20, 0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [kPrimary, kPrimaryLight],
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
+                  const SizedBox(width: 8),
+                  Icon(Icons.eco_rounded, color: kSecondary, size: 24),
+                ],
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.settings_rounded, color: textColor),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).push(
+                      SmoothPageRoute(
+                        builder: (_) => SettingsScreen(
+                          appState: widget.appState,
+                          onThemeChanged: widget.onThemeChanged,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Welcome message with guidance
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [kPrimary.withAlpha(20), kSecondary.withAlpha(15)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: kPrimary.withAlpha(30)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              const Icon(Icons.eco, color: Colors.white, size: 20),
+                              Icon(Icons.info_rounded, color: kPrimary, size: 20),
                               const SizedBox(width: 8),
                               Text(
-                                'ScrapChef',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
+                                'Welcome to ScrapChef!',
+                                style: TextStyle(
                                   fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            itemsLogged == 0
+                                ? 'Start by scanning a food scrap or adding one manually to get recipe suggestions!'
+                                : 'Great job! Keep adding scraps to discover more recipes.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: textColor.withAlpha(160),
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Quick action buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _QuickActionButton(
+                            icon: Icons.camera_alt_rounded,
+                            label: 'Scan Scrap',
+                            color: kPrimary,
+                            onTap: _openScanFlow,
+                            textColor: textColor,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _QuickActionButton(
+                            icon: Icons.add_circle_rounded,
+                            label: 'Add Manually',
+                            color: kSecondary,
+                            onTap: _addManualItem,
+                            textColor: textColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Stats section
+                    _ImpactLedger(itemsLogged: itemsLogged),
+                    const SizedBox(height: 24),
+
+                    // Recipe matching toggle
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: kDivider),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.restaurant_menu_rounded, color: kPrimary, size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Recipe Matching',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: textColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() => _useBatchMatching = !_useBatchMatching);
+                              HapticFeedback.selectionClick();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: _useBatchMatching
+                                    ? const LinearGradient(
+                                        colors: [kPrimary, kPrimaryLight],
+                                      )
+                                    : null,
+                                color: _useBatchMatching ? null : kDivider,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                _useBatchMatching ? 'Batch' : 'Individual',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: _useBatchMatching ? Colors.white : textColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                child: Column(
+                  children: [
+                    if (savedRecipes.isNotEmpty) ...[
+                      _SectionHeader(title: 'Saved Recipes'),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 160,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: savedRecipes.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: SizedBox(
+                                width: 280,
+                                child: _SavedRecipeTile(
+                                  savedRecipe: savedRecipes[index],
+                                  onTap: () {
+                                    final recipe = RecipeSuggestion(
+                                      title: savedRecipes[index].title,
+                                      summary: savedRecipes[index].summary,
+                                      ingredients: savedRecipes[index].ingredients,
+                                      matchReason: savedRecipes[index].matchReason,
+                                      chefNote: savedRecipes[index].chefNote,
+                                    );
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) => RecipeDetailScreen(
+                                          recipe: recipe,
+                                          appState: widget.appState,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    _SectionHeader(title: _useBatchMatching ? 'Recipe Suggestions (Batch)' : 'Recipe Suggestions (Individual)'),
+                    const SizedBox(height: 12),
+                    if (displaySuggestions.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(40),
+                          child: Column(
+                            children: [
+                              Icon(Icons.restaurant_rounded, size: 64, color: kPrimary.withAlpha(100)),
+                              const SizedBox(height: 16),
+                              Text(
+                                _useBatchMatching
+                                    ? 'No recipes match your batch'
+                                    : 'No recipes match this scrap',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor.withAlpha(140),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Add more scraps to get better matches',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: textColor.withAlpha(120),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        GestureDetector(
-                          onTap: _openSettings,
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: cardColor,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: textColor.withAlpha(10),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.settings_rounded,
-                              color: textColor,
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: isDark
-                            ? [kDarkSurface, kDarkSurface]
-                            : [kPrimary, kPrimaryLight],
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: kPrimary.withAlpha(30),
-                          blurRadius: 24,
-                          offset: const Offset(0, 12),
-                        ),
-                      ],
-                    ),
-                    child: _HeroHeader(
-                      itemsLogged: itemsLogged,
-                      estimatedSavings: estimatedSavings,
-                      textColor: Colors.white,
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _ActionPanel(
-                      onScan: _openScanFlow,
-                      onManualAdd: _addManualItem,
-                      textColor: textColor,
-                      cardColor: cardColor,
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: textColor.withAlpha(8),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: TabBar(
-                      indicator: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [kPrimary, kPrimaryLight],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: textLightColor,
-                      labelStyle: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
-                      unselectedLabelStyle: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
-                      dividerColor: Colors.transparent,
-                      tabs: const [
-                        Tab(text: 'Scan'),
-                        Tab(text: 'Bin'),
-                        Tab(text: 'Recipes'),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: cardColor,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: dividerColor),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.restaurant_menu_rounded, color: kPrimary, size: 22),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'Recipe Matching',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: textColor,
-                                    ),
+                      )
+                    else
+                      ...displaySuggestions.map((recipe) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _RecipeSuggestionCard(
+                            recipe: recipe,
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => RecipeDetailScreen(
+                                    recipe: recipe,
+                                    appState: widget.appState,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                GestureDetector(
-                                  onTap: () {
-                                    setState(() => _useBatchMatching = !_useBatchMatching);
-                                    HapticFeedback.selectionClick();
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      gradient: _useBatchMatching
-                                          ? const LinearGradient(
-                                              colors: [kPrimary, kPrimaryLight],
-                                            )
-                                          : null,
-                                      color: _useBatchMatching ? null : dividerColor,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      _useBatchMatching ? 'Batch' : 'Individual',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: _useBatchMatching ? Colors.white : textColor,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              );
+                            },
+                            textColor: textColor,
+                            cardColor: cardColor,
+                            useBatchMatching: _useBatchMatching,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
+                        );
+                      }),
+                    const SizedBox(height: 40),
+                  ],
                 ),
-              ];
-            },
-            body: TabBarView(
-              children: [
-                _ScanTab(
-                  outcome: outcome,
-                  itemsLogged: itemsLogged,
-                  onScan: _openScanFlow,
-                  textColor: textColor,
-                ),
-                _InventoryTab(
-                  items: inventory,
-                  onRefresh: () async {
-                    await Future.delayed(const Duration(seconds: 1));
-                  },
-                  textColor: textColor,
-                  cardColor: cardColor,
-                ),
-                _RecipeTab(
-                  recipes: suggestions,
-                  savedRecipes: widget.appState.savedRecipes,
-                  batchLabels: latestBatchLabels,
-                  appState: widget.appState,
-                  onRecipeTap: (recipe) {
-                    Navigator.of(context).push(
-                      SmoothPageRoute(
-                        builder: (_) => RecipeDetailScreen(recipe: recipe, appState: widget.appState),
-                      ),
-                    );
-                  },
-                  textColor: textColor,
-                  cardColor: cardColor,
-                  useBatchMatching: _useBatchMatching,
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -671,96 +693,787 @@ class _ActionButtonState extends State<_ActionButton>
   }
 }
 
-class _ScanTab extends StatelessWidget {
-  const _ScanTab({
-    required this.outcome,
-    required this.itemsLogged,
-    required this.onScan,
+class _QuickActionButton extends StatelessWidget {
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
     required this.textColor,
   });
 
-  final ScanOutcome? outcome;
-  final int itemsLogged;
-  final VoidCallback onScan;
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
   final Color textColor;
 
   @override
   Widget build(BuildContext context) {
-    final lastOutcome = outcome;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [color, color.withAlpha(200)]),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: color.withAlpha(40),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 22),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w800,
+        color: kText,
+      ),
+    );
+  }
+}
+
+class _ImpactLedger extends StatelessWidget {
+  const _ImpactLedger({required this.itemsLogged});
+
+  final int itemsLogged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? kDarkText : kText;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Card(
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [kSecondary.withAlpha(30), kSecondary.withAlpha(15)],
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.eco_rounded, size: 22, color: kSecondary),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Your Impact',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _StatItem(
+              icon: Icons.check_circle_rounded,
+              label: '$itemsLogged scraps tracked',
+              color: kSecondary,
+              textColor: textColor,
+            ),
+            const SizedBox(width: 24),
+            _StatItem(
+              icon: Icons.savings_rounded,
+              label: '₱${(itemsLogged * 15).toStringAsFixed(0)} saved',
+              color: kPrimary,
+              textColor: textColor,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  const _StatItem({required this.icon, required this.label, required this.color, required this.textColor});
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: textColor.withAlpha(180),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SavedRecipeTile extends StatelessWidget {
+  const _SavedRecipeTile({
+    required this.savedRecipe,
+    required this.onTap,
+  });
+
+  final SavedRecipeRecord savedRecipe;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: kDivider),
+          boxShadow: [
+            BoxShadow(
+              color: textColor.withAlpha(8),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              savedRecipe.title,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              savedRecipe.summary,
+              style: TextStyle(
+                fontSize: 13,
+                color: textColor.withAlpha(140),
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecipeSuggestionCard extends StatelessWidget {
+  const _RecipeSuggestionCard({
+    required this.recipe,
+    required this.onTap,
+    required this.textColor,
+    required this.cardColor,
+    required this.useBatchMatching,
+  });
+
+  final RecipeSuggestion recipe;
+  final VoidCallback onTap;
+  final Color textColor;
+  final Color cardColor;
+  final bool useBatchMatching;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: kDivider),
+          boxShadow: [
+            BoxShadow(
+              color: textColor.withAlpha(10),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [kPrimary.withAlpha(20), kPrimaryLight.withAlpha(10)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.restaurant_menu_rounded, color: kPrimary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    recipe.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              recipe.summary,
+              style: TextStyle(
+                fontSize: 14,
+                color: textColor.withAlpha(140),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _MatchBadge(matchReason: recipe.matchReason),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchBadge extends StatelessWidget {
+  const _MatchBadge({required this.matchReason});
+
+  final String matchReason;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [kSecondary.withAlpha(20), kSecondary.withAlpha(10)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kSecondary.withAlpha(40)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.auto_awesome_rounded, size: 14, color: kSecondary),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              matchReason,
+              style: const TextStyle(
+                color: kSecondary,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ManualAddSheet extends StatefulWidget {
+  const _ManualAddSheet({required this.labels});
+
+  final List<String> labels;
+
+  @override
+  State<_ManualAddSheet> createState() => _ManualAddSheetState();
+}
+
+class _ManualAddSheetState extends State<_ManualAddSheet> {
+  String? _selectedLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Add Scrap Manually',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Select the type of scrap:',
+            style: TextStyle(
+              fontSize: 14,
+              color: textColor.withAlpha(140),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: widget.labels.map((label) {
+              final isSelected = _selectedLabel == label;
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _selectedLabel = label);
+                  HapticFeedback.selectionClick();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: isSelected
+                        ? LinearGradient(colors: [kPrimary, kPrimaryLight.withAlpha(200)])
+                        : null,
+                    color: isSelected ? null : cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? kPrimary : kDivider,
+                    ),
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : textColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _selectedLabel != null
+                      ? () => Navigator.of(context).pop(_selectedLabel)
+                      : null,
+                  child: const Text('Add'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HelpSheet extends StatelessWidget {
+  const _HelpSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'How to Use ScrapChef',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _HelpStep(
+            icon: Icons.camera_alt_rounded,
+            title: 'Scan a scrap',
+            description: 'Take a photo of your food scrap to identify it',
+          ),
+          const SizedBox(height: 12),
+          _HelpStep(
+            icon: Icons.check_circle_rounded,
+            title: 'Confirm the label',
+            description: 'Review and confirm the AI classification',
+          ),
+          const SizedBox(height: 12),
+          _HelpStep(
+            icon: Icons.restaurant_menu_rounded,
+            title: 'Get recipes',
+            description: 'Discover recipes based on your scraps',
+          ),
+          const SizedBox(height: 12),
+          _HelpStep(
+            icon: Icons.add_circle_rounded,
+            title: 'Add manually',
+            description: 'Add scraps manually if scanning fails',
+          ),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HelpStep extends StatelessWidget {
+  const _HelpStep({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [kPrimary.withAlpha(20), kPrimaryLight.withAlpha(10)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: kPrimary, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [kPrimary.withAlpha(30), kPrimaryLight.withAlpha(15)],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.camera_enhance_rounded,
-                      color: kPrimary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Ready to scan',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: textColor,
-                          ),
-                        ),
-                        Text(
-                          'Capture scraps, classify them, and get recipe matches',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: textColor.withAlpha(140),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
               Text(
-                'Use the Scan Scrap button above to capture a photo.',
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: kText,
+                ),
+              ),
+              Text(
+                description,
                 style: TextStyle(
                   fontSize: 13,
-                  color: textColor.withAlpha(140),
+                  color: kTextLight,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        if (lastOutcome != null) ...[
-          _Card(
-            child: _LatestScanCard(outcome: lastOutcome),
+      ],
+    );
+  }
+}
+
+class _Card extends StatelessWidget {
+  const _Card({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: kDivider),
+        boxShadow: [
+          BoxShadow(
+            color: textColor.withAlpha(10),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
-          const SizedBox(height: 16),
         ],
-        _Card(
-          child: _ImpactLedger(itemsLogged: itemsLogged),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _ConfidenceMeter extends StatelessWidget {
+  const _ConfidenceMeter({required this.confidence});
+
+  final double confidence;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? kDarkText : kText;
+    final percentage = (confidence * 100).toInt();
+    final filledSegments = ((confidence * 10).toInt()).clamp(0, 10);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Confidence',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: textColor.withAlpha(140),
+              ),
+            ),
+            Text(
+              '$percentage%',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: kPrimary,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
-        _Card(
-          child: const _HowItWorksSection(),
+        const SizedBox(height: 6),
+        Row(
+          children: List.generate(
+            10,
+            (index) => Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 400),
+                height: 6,
+                margin: const EdgeInsets.symmetric(horizontal: 1),
+                decoration: BoxDecoration(
+                  color: index < filledSegments
+                      ? kPrimary
+                      : textColor.withAlpha(30),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
+          ),
         ),
       ],
+    );
+  }
+}
+
+class _InventoryTab extends StatelessWidget {
+  const _InventoryTab({
+    required this.items,
+    required this.onRefresh,
+    required this.textColor,
+    required this.cardColor,
+  });
+
+  final List<ScrapItem> items;
+  final VoidCallback onRefresh;
+  final Color textColor;
+  final Color cardColor;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return Center(
+        child: EmptyStateWithMascot(
+          mascot: const EmptyBinMascot(),
+          title: 'No scraps yet',
+          subtitle: 'Start by scanning or adding food scraps to build your inventory',
+          actionLabel: 'Add First Scrap',
+          onAction: onRefresh,
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _Card(
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [kPrimary.withAlpha(30), kPrimaryLight.withAlpha(15)],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(Icons.eco_rounded, color: kPrimary, size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.label,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Added ${_formatDate(item.timestamp)}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: textColor.withAlpha(140),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else {
+      return '${difference.inDays}d ago';
+    }
+  }
+}
+
+class _RecipeTab extends StatelessWidget {
+  const _RecipeTab({
+    required this.recipes,
+    required this.onRecipeTap,
+    required this.textColor,
+    required this.cardColor,
+    required this.useBatchMatching,
+  });
+
+  final List<RecipeSuggestion> recipes;
+  final Function(RecipeSuggestion) onRecipeTap;
+  final Color textColor;
+  final Color cardColor;
+  final bool useBatchMatching;
+
+  @override
+  Widget build(BuildContext context) {
+    if (recipes.isEmpty) {
+      return Center(
+        child: EmptyStateWithMascot(
+          mascot: const NoRecipesMascot(),
+          title: 'No recipes yet',
+          subtitle: 'Add more scraps to discover delicious recipes',
+          actionLabel: 'Add Scraps',
+          onAction: () {},
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      itemCount: recipes.length,
+      itemBuilder: (context, index) {
+        final recipe = recipes[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: _RecipeSuggestionCard(
+            recipe: recipe,
+            onTap: () => onRecipeTap(recipe),
+            textColor: textColor,
+            cardColor: cardColor,
+            useBatchMatching: useBatchMatching,
+          ),
+        );
+      },
     );
   }
 }
@@ -927,67 +1640,6 @@ class _ConfidenceMeter extends StatelessWidget {
               ),
             ),
           ),
-        ),
-    );
-  }
-}
-
-class _ImpactLedger extends StatelessWidget {
-  const _ImpactLedger({required this.itemsLogged});
-
-  final int itemsLogged;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? kDarkText : kText;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [kSecondary.withAlpha(30), kSecondary.withAlpha(15)],
-                ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(Icons.eco_rounded, size: 22, color: kSecondary),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Your Impact',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: textColor,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _ImpactRow(
-          icon: Icons.check_circle_rounded,
-          label: '$itemsLogged scraps scanned',
-          color: kSecondary,
-          textColor: textColor,
-        ),
-        const SizedBox(height: 10),
-        _ImpactRow(
-          icon: Icons.restaurant_rounded,
-          label: '${itemsLogged * 2} recipe ideas',
-          color: kPrimary,
-          textColor: textColor,
-        ),
-        const SizedBox(height: 10),
-        _ImpactRow(
-          icon: Icons.spa_rounded,
-          label: 'Reducing food waste',
-          color: kSecondary,
-          textColor: textColor,
         ),
       ],
     );
@@ -1338,7 +1990,23 @@ class _RecipeTab extends StatelessWidget {
                     width: 280,
                     child: _SavedRecipeTile(
                       savedRecipe: savedRecipes[index],
-                      onTap: () => appState.openRecipeDetail(savedRecipes[index]),
+                      onTap: () {
+                        final recipe = RecipeSuggestion(
+                          title: savedRecipes[index].title,
+                          summary: savedRecipes[index].summary,
+                          ingredients: savedRecipes[index].ingredients,
+                          matchReason: savedRecipes[index].matchReason,
+                          chefNote: savedRecipes[index].chefNote,
+                        );
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => RecipeDetailScreen(
+                              recipe: recipe,
+                              appState: appState,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 );
@@ -1392,28 +2060,6 @@ class _RecipeTab extends StatelessWidget {
             );
           }),
       ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? kDarkText : kText;
-
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w800,
-        color: textColor,
-        letterSpacing: -0.3,
-      ),
     );
   }
 }
@@ -1589,173 +2235,6 @@ class _RecipeTile extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ManualAddSheet extends StatefulWidget {
-  const _ManualAddSheet({required this.labels});
-
-  final List<String> labels;
-
-  @override
-  State<_ManualAddSheet> createState() => _ManualAddSheetState();
-}
-
-class _ManualAddSheetState extends State<_ManualAddSheet> {
-  String? selectedLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? kDarkSurface : kSurface;
-    final textColor = isDark ? kDarkText : kText;
-
-    return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: textColor.withAlpha(20),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: textColor.withAlpha(60),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Add Scrap',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Select the type of food scrap',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: textColor.withAlpha(140),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Flexible(
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 3,
-                  ),
-                  itemCount: widget.labels.length,
-                  itemBuilder: (context, index) {
-                    final label = widget.labels[index];
-                    final isSelected = selectedLabel == label;
-
-                    return GestureDetector(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => selectedLabel = label);
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          gradient: isSelected
-                              ? LinearGradient(
-                                  colors: [kPrimary, kPrimaryLight],
-                                )
-                              : null,
-                          color: isSelected ? null : textColor.withAlpha(10),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: isSelected
-                                ? kPrimary
-                                : textColor.withAlpha(30),
-                            width: isSelected ? 2 : 1,
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isSelected
-                                ? Colors.white
-                                : textColor.withAlpha(180),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: selectedLabel == null
-                    ? null
-                    : () {
-                        HapticFeedback.mediumImpact();
-                        Navigator.of(context).pop(selectedLabel);
-                      },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  decoration: BoxDecoration(
-                    gradient: selectedLabel == null
-                        ? null
-                        : LinearGradient(
-                            colors: [kPrimary, kPrimaryLight],
-                          ),
-                    color: selectedLabel == null ? textColor.withAlpha(30) : null,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    'Add to Bin',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: selectedLabel == null
-                          ? textColor.withAlpha(100)
-                          : Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
         ),
       ),
     );

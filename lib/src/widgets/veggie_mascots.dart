@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 
-// Modern color palette
-const Color kPrimary = Color(0xFF6C5CE7);
-const Color kPrimaryLight = Color(0xFFA29BFE);
-const Color kSecondary = Color(0xFF00CEC9);
-const Color kAccent = Color(0xFFFD79A8);
-const Color kBackground = Color(0xFFF8F9FA);
-const Color kSurface = Color(0xFFFFFFFF);
-const Color kText = Color(0xFF2D3436);
-const Color kTextLight = Color(0xFF636E72);
-const Color kDivider = Color(0xFFDFE6E9);
+// Earthy color palette for food scrap theme
+const Color kPrimary = Color(0xFF8B7355); // Warm earth brown
+const Color kPrimaryLight = Color(0xFFA89070); // Light earth brown
+const Color kSecondary = Color(0xFF6B8E23); // Olive green
+const Color kAccent = Color(0xFFD2691E); // Chocolate orange
+const Color kBackground = Color(0xFFF5F0E6); // Creamy beige
+const Color kSurface = Color(0xFFFFFFFF); // White
+const Color kText = Color(0xFF4A3F35); // Dark earth brown
+const Color kTextLight = Color(0xFF6B5D52); // Medium earth brown
+const Color kDivider = Color(0xFFE0D5C5); // Light beige
 
-// Dark theme colors
-const Color kDarkBackground = Color(0xFF121212);
-const Color kDarkSurface = Color(0xFF1E1E1E);
-const Color kDarkText = Color(0xFFE0E0E0);
-const Color kDarkTextLight = Color(0xFFB0B0B0);
-const Color kDarkDivider = Color(0xFF2C2C2C);
+// Dark theme colors (earthy dark mode)
+const Color kDarkBackground = Color(0xFF2A2520); // Dark earth brown
+const Color kDarkSurface = Color(0xFF3A3530); // Dark brown surface
+const Color kDarkText = Color(0xFFE8E0D8); // Light cream text
+const Color kDarkTextLight = Color(0xFFB8B0A8); // Medium cream text
+const Color kDarkDivider = Color(0xFF4A4540); // Dark divider
 
 // Vegetable-specific colors (kept for mascot designs)
 const Color kCarrotOrange = Color(0xFFFF8C42);
@@ -284,20 +284,20 @@ class _HappyTomatoPainter extends CustomPainter {
     canvas.drawCircle(Offset(center.dx + 18, center.dy + 5), 8, paint);
 
     // Happy eyes (sparkly, bigger)
-    paint.color = kDeepBrown;
+    paint.color = kText;
     // Left eye (filled circle)
     canvas.drawCircle(Offset(center.dx - 11, center.dy - 8), 6, paint);
     // Eye highlight
     paint.color = Colors.white;
     canvas.drawCircle(Offset(center.dx - 13, center.dy - 10), 2.5, paint);
     // Right eye
-    paint.color = kDeepBrown;
+    paint.color = kText;
     canvas.drawCircle(Offset(center.dx + 11, center.dy - 8), 6, paint);
     paint.color = Colors.white;
     canvas.drawCircle(Offset(center.dx + 9, center.dy - 10), 2.5, paint);
 
     // Happy open mouth (D-shape)
-    paint.color = kDeepBrown;
+    paint.color = kText;
     final mouthPath = Path()
       ..moveTo(center.dx - 10, center.dy + 10)
       ..quadraticBezierTo(center.dx, center.dy + 22, center.dx + 10, center.dy + 10)
@@ -349,7 +349,7 @@ class _ThinkingBroccoliPainter extends CustomPainter {
     canvas.drawPath(bodyPath, paint);
 
     // Stem (rounder)
-    paint.color = kSage;
+    paint.color = kSecondary;
     final stemPath = Path()
       ..moveTo(center.dx - 8, center.dy + 25)
       ..lineTo(center.dx - 8, center.dy + 42)
@@ -365,7 +365,7 @@ class _ThinkingBroccoliPainter extends CustomPainter {
     canvas.drawCircle(Offset(center.dx + 16, center.dy + 5), 7, paint);
 
     // Eyes (looking up - thinking, bigger)
-    paint.color = kDeepBrown;
+    paint.color = kText;
     // Left eye (looking up-right)
     canvas.drawCircle(Offset(center.dx - 11, center.dy - 8), 4, paint);
     paint.style = PaintingStyle.stroke;
@@ -375,7 +375,7 @@ class _ThinkingBroccoliPainter extends CustomPainter {
     
     // Right eye (looking up-left)
     paint.style = PaintingStyle.fill;
-    paint.color = kDeepBrown;
+    paint.color = kText;
     canvas.drawCircle(Offset(center.dx + 11, center.dy - 8), 4, paint);
     paint.style = PaintingStyle.stroke;
     paint.color = Colors.white.withAlpha(180);
@@ -384,7 +384,7 @@ class _ThinkingBroccoliPainter extends CustomPainter {
     // Thinking mouth (small cute o)
     paint.style = PaintingStyle.stroke;
     paint.strokeWidth = 2.5;
-    paint.color = kDeepBrown;
+    paint.color = kText;
     canvas.drawCircle(Offset(center.dx, center.dy + 8), 4, paint);
 
     // Thought bubble (bigger, cuter)
@@ -399,7 +399,7 @@ class _ThinkingBroccoliPainter extends CustomPainter {
       text: const TextSpan(
         text: '?',
         style: TextStyle(
-          color: kTerracotta,
+          color: kPrimary,
           fontSize: 24,
           fontWeight: FontWeight.bold,
         ),
@@ -431,7 +431,7 @@ class _CelebratingRadishPainter extends CustomPainter {
     canvas.drawCircle(Offset(center.dx + 12, center.dy + 5), 6, paint);
 
     // Happy eyes (closed with joy)
-    paint.color = kDeepBrown;
+    paint.color = kText;
     paint.style = PaintingStyle.stroke;
     paint.strokeWidth = 2;
     // Left eye (upside down arc)
@@ -461,7 +461,7 @@ class _CelebratingRadishPainter extends CustomPainter {
     canvas.drawPath(smilePath, paint);
 
     // Leaves (green, raised up like arms)
-    paint.color = kSage;
+    paint.color = kSecondary;
     // Left leaf (waving)
     final leftLeafPath = Path()
       ..moveTo(center.dx - 20, center.dy - 25)
@@ -485,7 +485,7 @@ class _CelebratingRadishPainter extends CustomPainter {
     canvas.drawPath(centerLeafPath, paint);
 
     // Confetti dots around
-    final confettiColors = [kTerracotta, kSage, Colors.yellow, Colors.orange];
+    final confettiColors = [kPrimary, kSecondary, Colors.yellow, Colors.orange];
     for (int i = 0; i < 8; i++) {
       paint.color = confettiColors[i % confettiColors.length];
       const radius = 50.0;
@@ -518,16 +518,20 @@ class EmptyStateWithMascot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
     return Center(
       child: Container(
         margin: const EdgeInsets.all(24),
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: kDeepBrown.withAlpha(15),
+              color: textColor.withAlpha(15),
               blurRadius: 24,
               offset: const Offset(0, 12),
             ),
@@ -540,10 +544,10 @@ class EmptyStateWithMascot extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: kDeepBrown,
+                color: textColor,
               ),
               textAlign: TextAlign.center,
             ),
@@ -552,7 +556,7 @@ class EmptyStateWithMascot extends StatelessWidget {
               subtitle,
               style: TextStyle(
                 fontSize: 15,
-                color: kDeepBrown.withAlpha(140),
+                color: textColor.withAlpha(140),
                 height: 1.4,
               ),
               textAlign: TextAlign.center,
@@ -564,7 +568,7 @@ class EmptyStateWithMascot extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   decoration: BoxDecoration(
-                    color: kTerracotta,
+                    gradient: LinearGradient(colors: [kPrimary, kPrimaryLight.withAlpha(200)]),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(

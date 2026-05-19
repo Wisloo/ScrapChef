@@ -7,23 +7,23 @@ import 'package:image_picker/image_picker.dart';
 
 import '../state/app_state.dart';
 
-// Modern color palette
-const Color kPrimary = Color(0xFF6C5CE7);
-const Color kPrimaryLight = Color(0xFFA29BFE);
-const Color kSecondary = Color(0xFF00CEC9);
-const Color kAccent = Color(0xFFFD79A8);
-const Color kBackground = Color(0xFFF8F9FA);
-const Color kSurface = Color(0xFFFFFFFF);
-const Color kText = Color(0xFF2D3436);
-const Color kTextLight = Color(0xFF636E72);
-const Color kDivider = Color(0xFFDFE6E9);
+// Earthy color palette for food scrap theme
+const Color kPrimary = Color(0xFF8B7355); // Warm earth brown
+const Color kPrimaryLight = Color(0xFFA89070); // Light earth brown
+const Color kSecondary = Color(0xFF6B8E23); // Olive green
+const Color kAccent = Color(0xFFD2691E); // Chocolate orange
+const Color kBackground = Color(0xFFF5F0E6); // Creamy beige
+const Color kSurface = Color(0xFFFFFFFF); // White
+const Color kText = Color(0xFF4A3F35); // Dark earth brown
+const Color kTextLight = Color(0xFF6B5D52); // Medium earth brown
+const Color kDivider = Color(0xFFE0D5C5); // Light beige
 
-// Dark theme colors
-const Color kDarkBackground = Color(0xFF121212);
-const Color kDarkSurface = Color(0xFF1E1E1E);
-const Color kDarkText = Color(0xFFE0E0E0);
-const Color kDarkTextLight = Color(0xFFB0B0B0);
-const Color kDarkDivider = Color(0xFF2C2C2C);
+// Dark theme colors (earthy dark mode)
+const Color kDarkBackground = Color(0xFF2A2520); // Dark earth brown
+const Color kDarkSurface = Color(0xFF3A3530); // Dark brown surface
+const Color kDarkText = Color(0xFFE8E0D8); // Light cream text
+const Color kDarkTextLight = Color(0xFFB8B0A8); // Medium cream text
+const Color kDarkDivider = Color(0xFF4A4540); // Dark divider
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key, required this.appState});
@@ -66,6 +66,11 @@ class _ScanScreenState extends State<ScanScreen> {
       final result = await widget.appState.classifierService.analyzeFoodScraps(
         _selectedImage!.path,
       );
+
+      // Check if API is unavailable
+      if (result.contains('overloaded') || result.contains('not available')) {
+        throw Exception('API unavailable');
+      }
 
       // Parse the JSON result from Gemini API (assuming it's always valid JSON)
       // This is a simplified approach; in a real app, you'd add robust error handling
@@ -136,10 +141,33 @@ class _ScanScreenState extends State<ScanScreen> {
         }
       }
     } catch (e) {
+      // Fallback to manual selection when API is unavailable
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Classification failed: $e')),
+        final label = await showModalBottomSheet<String>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => _ManualLabelSheet(
+            labels: widget.appState.supportedLabels,
+            errorMessage: 'AI is currently unavailable. Please select manually.',
+          ),
         );
+
+        if (label != null && label.isNotEmpty) {
+          if (_batchMode) {
+            setState(() {
+              _batchLabels.add(label);
+              _selectedImage = null;
+            });
+            HapticFeedback.mediumImpact();
+          } else {
+            widget.appState.handleAutoClassification(label, confidence: 1.0);
+            HapticFeedback.mediumImpact();
+            if (mounted) {
+              Navigator.of(context).pop(widget.appState.lastOutcome);
+            }
+          }
+        }
       }
     }
   }
@@ -899,6 +927,235 @@ class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
               ),
               const SizedBox(height: 20),
               Expanded(
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 2.5,
+                  ),
+                  itemCount: widget.labels.length,
+                  itemBuilder: (context, index) {
+                    final label = widget.labels[index];
+                    final isSelected = selectedLabel == label;
+
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() => selectedLabel = label);
+                        HapticFeedback.selectionClick();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: isSelected
+                              ? LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)])
+                              : null,
+                          color: isSelected ? null : textColor.withAlpha(10),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected ? kSecondary : textColor.withAlpha(30),
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected ? Colors.white : textColor,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: cardColor.withAlpha(230),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: textColor.withAlpha(20)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.close_rounded,
+                              color: textColor.withAlpha(200),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Cancel',
+                              style: TextStyle(
+                                color: textColor.withAlpha(200),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: selectedLabel != null
+                          ? () {
+                              Navigator.of(context).pop(selectedLabel);
+                              HapticFeedback.mediumImpact();
+                            }
+                          : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: selectedLabel != null
+                              ? LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)])
+                              : null,
+                          color: selectedLabel != null ? null : cardColor.withAlpha(230),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: selectedLabel != null ? kSecondary : textColor.withAlpha(20),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Confirm',
+                              style: TextStyle(
+                                color: selectedLabel != null ? Colors.white : textColor.withAlpha(200),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ManualLabelSheet extends StatefulWidget {
+  const _ManualLabelSheet({
+    required this.labels,
+    this.errorMessage,
+  });
+
+  final List<String> labels;
+  final String? errorMessage;
+
+  @override
+  State<_ManualLabelSheet> createState() => _ManualLabelSheetState();
+}
+
+class _ManualLabelSheetState extends State<_ManualLabelSheet> {
+  String? selectedLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? kDarkSurface : kSurface;
+    final textColor = isDark ? kDarkText : kText;
+
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: textColor.withAlpha(30),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: textColor.withAlpha(60),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (widget.errorMessage != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [kAccent.withAlpha(20), kAccent.withAlpha(10)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: kAccent.withAlpha(30)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_rounded, color: kAccent, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.errorMessage!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: textColor,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              Text(
+                'Select Food Scrap Type',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Choose from the list below',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: textColor.withAlpha(140),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Flexible(
                 child: GridView.builder(
                   shrinkWrap: true,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
