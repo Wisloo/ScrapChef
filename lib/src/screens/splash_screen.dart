@@ -1,22 +1,5 @@
 import 'package:flutter/material.dart';
-
-// Earthy color palette for food scrap theme
-const Color kPrimary = Color(0xFF8B7355); // Warm earth brown
-const Color kPrimaryLight = Color(0xFFA89070); // Light earth brown
-const Color kSecondary = Color(0xFF6B8E23); // Olive green
-const Color kAccent = Color(0xFFD2691E); // Chocolate orange
-const Color kBackground = Color(0xFFF5F0E6); // Creamy beige
-const Color kSurface = Color(0xFFFFFFFF); // White
-const Color kText = Color(0xFF4A3F35); // Dark earth brown
-const Color kTextLight = Color(0xFF6B5D52); // Medium earth brown
-const Color kDivider = Color(0xFFE0D5C5); // Light beige
-
-// Dark theme colors (earthy dark mode)
-const Color kDarkBackground = Color(0xFF2A2520); // Dark earth brown
-const Color kDarkSurface = Color(0xFF3A3530); // Dark brown surface
-const Color kDarkText = Color(0xFFE8E0D8); // Light cream text
-const Color kDarkTextLight = Color(0xFFB8B0A8); // Medium cream text
-const Color kDarkDivider = Color(0xFF4A4540); // Dark divider
+import '../theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key, required this.onComplete});

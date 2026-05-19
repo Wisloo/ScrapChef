@@ -38,7 +38,7 @@ class AppState extends ChangeNotifier {
   bool _isBootstrapping = true;
   bool _isLoadingRecipes = false;
 
-  List<String> get supportedLabels => const []; // GeminiService does not have pre-defined labels
+  List<String> get supportedLabels => RecipeService.supportedLabels;
 
   List<ScrapItem> get inventory => List.unmodifiable(_inventory);
 
@@ -80,12 +80,16 @@ class AppState extends ChangeNotifier {
     return _savedRecipes.any((saved) => saved.recipeId == recipe.stableId);
   }
 
-  /// Recipes prioritize the latest scanned batch when available.
+  /// Recipes use full inventory plus the latest scan for better matches.
   List<RecipeSuggestion> get activeRecipeSuggestions {
-    if (_latestBatchLabels.isNotEmpty) {
-      return _recipeService.suggestForLabels(_latestBatchLabels);
+    final labels = <String>{
+      ..._inventory.map((item) => item.label),
+      ..._latestBatchLabels,
+    };
+    if (labels.isEmpty) {
+      return recipeSuggestions;
     }
-    return recipeSuggestions;
+    return _recipeService.suggestForLabels(labels);
   }
 
   /// Suggest recipes for an explicit set of labels (useful for previewing a batch before committing).
@@ -327,6 +331,20 @@ class AppState extends ChangeNotifier {
     // Play success sound
     SoundService.playSuccess();
 
+    notifyListeners();
+  }
+
+  void clearBin() {
+    _inventory.clear();
+    _latestBatchLabels.clear();
+    
+    // Clear from Firebase if user is signed in
+    if (_authService.isSignedIn && _authService.userId != null) {
+      _scrapStore.clearAllScraps(_authService.userId!).catchError((e) {
+        print('Failed to clear scraps from Firebase: $e');
+      });
+    }
+    
     notifyListeners();
   }
 

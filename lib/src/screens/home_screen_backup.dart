@@ -22,9 +22,10 @@ const Color kLightBeige = kPaperCream;
 const Color kMintGreen = kHerbSage;
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.appState});
+  const HomeScreen({super.key, required this.appState, required this.onThemeChanged});
 
   final AppState appState;
+  final ValueChanged<bool> onThemeChanged;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();

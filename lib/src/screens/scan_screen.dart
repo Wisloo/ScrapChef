@@ -1,29 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'dart:convert'; // Import for jsonDecode
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../state/app_state.dart';
-
-// Earthy color palette for food scrap theme
-const Color kPrimary = Color(0xFF8B7355); // Warm earth brown
-const Color kPrimaryLight = Color(0xFFA89070); // Light earth brown
-const Color kSecondary = Color(0xFF6B8E23); // Olive green
-const Color kAccent = Color(0xFFD2691E); // Chocolate orange
-const Color kBackground = Color(0xFFF5F0E6); // Creamy beige
-const Color kSurface = Color(0xFFFFFFFF); // White
-const Color kText = Color(0xFF4A3F35); // Dark earth brown
-const Color kTextLight = Color(0xFF6B5D52); // Medium earth brown
-const Color kDivider = Color(0xFFE0D5C5); // Light beige
-
-// Dark theme colors (earthy dark mode)
-const Color kDarkBackground = Color(0xFF2A2520); // Dark earth brown
-const Color kDarkSurface = Color(0xFF3A3530); // Dark brown surface
-const Color kDarkText = Color(0xFFE8E0D8); // Light cream text
-const Color kDarkTextLight = Color(0xFFB8B0A8); // Medium cream text
-const Color kDarkDivider = Color(0xFF4A4540); // Dark divider
+import '../theme/app_theme.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key, required this.appState});
@@ -37,12 +21,15 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> {
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedImage;
-  bool _batchMode = false;
-  final List<String> _batchLabels = <String>[];
+  bool _isAnalyzing = false;
 
   Future<void> _pickFromCamera() async {
     HapticFeedback.mediumImpact();
-    final image = await _picker.pickImage(source: ImageSource.camera);
+    final image = await _picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1280,
+      imageQuality: 85,
+    );
     if (image != null && mounted) {
       setState(() => _selectedImage = image);
     }
@@ -50,145 +37,208 @@ class _ScanScreenState extends State<ScanScreen> {
 
   Future<void> _pickFromGallery() async {
     HapticFeedback.lightImpact();
-    final image = await _picker.pickImage(source: ImageSource.gallery);
+    final image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1280,
+      imageQuality: 85,
+    );
     if (image != null && mounted) {
       setState(() => _selectedImage = image);
     }
   }
 
-  Future<void> _showLabelSelector() async {
-    if (_selectedImage == null) {
-      return;
+  Future<void> _showAnalyzingDialog() {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: kSecondary),
+              const SizedBox(height: 20),
+              Text(
+                'Analyzing scrap…',
+                style: Theme.of(ctx).textTheme.titleMedium,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String? _parseDetectedLabel(String result) {
+    if (result.startsWith('Error:')) {
+      return null;
+    }
+    if (result.contains('overloaded') || result.contains('not available')) {
+      return null;
     }
 
     try {
-      // Use the GeminiService to analyze the image
+      final jsonResult = jsonDecode(result) as Map<String, dynamic>;
+      final foodScraps = jsonResult['food_scraps'];
+      if (foodScraps is! List || foodScraps.isEmpty) {
+        return null;
+      }
+      final first = foodScraps.first;
+      if (first is! Map) {
+        return null;
+      }
+      final item = first['item'];
+      if (item is! String || item.trim().isEmpty) {
+        return null;
+      }
+      return item.trim();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _showDetectionResultDialog(String predictedLabel) async {
+    if (!mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Food Scrap Detected',
+                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              const Icon(Icons.eco_rounded, size: 48, color: kSecondary),
+              const SizedBox(height: 16),
+              Text(
+                'Detected: $predictedLabel',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: kSecondary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text('Continue'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      widget.appState.handleAutoClassification(
+        predictedLabel,
+        confidence: 1.0,
+      );
+      HapticFeedback.mediumImpact();
+      Navigator.of(context).pop(widget.appState.lastOutcome);
+    }
+  }
+
+  Future<void> _offerManualFallback({String? errorMessage}) async {
+    if (!mounted) return;
+
+    final label = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ManualLabelSheet(
+        labels: widget.appState.supportedLabels,
+        errorMessage: errorMessage ??
+            'AI is currently unavailable. Please select manually.',
+      ),
+    );
+
+    if (label != null && label.isNotEmpty && mounted) {
+      widget.appState.handleAutoClassification(label, confidence: 1.0);
+      HapticFeedback.mediumImpact();
+      Navigator.of(context).pop(widget.appState.lastOutcome);
+    }
+  }
+
+  Future<void> _showLabelSelector() async {
+    if (_isAnalyzing || _selectedImage == null) {
+      return;
+    }
+
+    _isAnalyzing = true;
+    final imagePath = _selectedImage!.path;
+    var loadingShown = false;
+
+    if (mounted) {
+      loadingShown = true;
+      unawaited(_showAnalyzingDialog());
+    }
+
+    try {
       final result = await widget.appState.classifierService.analyzeFoodScraps(
-        _selectedImage!.path,
+        imagePath,
       );
 
-      // Check if API is unavailable
-      if (result.contains('overloaded') || result.contains('not available')) {
-        throw Exception('API unavailable');
+      if (mounted && loadingShown) {
+        Navigator.of(context, rootNavigator: true).pop();
+        loadingShown = false;
       }
 
-      // Parse the JSON result from Gemini API (assuming it's always valid JSON)
-      // This is a simplified approach; in a real app, you'd add robust error handling
-      final Map<String, dynamic> jsonResult = jsonDecode(result);
-      final List<dynamic> foodScraps = jsonResult["food_scraps"];
+      if (!mounted) return;
 
-      if (foodScraps.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No food scraps detected.')),
-          );
-        }
+      if (result.startsWith('Error:')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.replaceFirst('Error: ', ''))),
+        );
+        await _offerManualFallback(errorMessage: result.replaceFirst('Error: ', ''));
+        return;
+      }
+
+      final predictedLabel = _parseDetectedLabel(result);
+      if (predictedLabel == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No food scraps detected. Try another photo.')),
+        );
         setState(() => _selectedImage = null);
         return;
       }
 
-      // For simplicity, we'll take the first detected scrap as the main one
-      // In a real app, you might present all options or let the user choose
-      final String predictedLabel = foodScraps[0]["item"];
-      final double confidence = 1.0; // Assuming Gemini provides high confidence
-
-      if (_batchMode) {
-        setState(() {
-          _batchLabels.add(predictedLabel);
-          _selectedImage = null;
-        });
-        HapticFeedback.mediumImpact();
-      } else {
-        // Show popup with classified result
-        if (mounted) {
-          await showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Food Scrap Detected'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.eco_rounded, size: 48, color: kSecondary),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Detected: $predictedLabel',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-              actions: [
-                FilledButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    widget.appState.handleAutoClassification(
-                      predictedLabel,
-                      confidence: confidence,
-                    );
-                    HapticFeedback.mediumImpact();
-                    if (mounted) {
-                      Navigator.of(context).pop(widget.appState.lastOutcome);
-                    }
-                  },
-                  child: const Text('Continue'),
-                ),
-              ],
-            ),
-          );
-        }
-      }
+      setState(() => _selectedImage = null);
+      await _showDetectionResultDialog(predictedLabel);
     } catch (e) {
-      // Fallback to manual selection when API is unavailable
-      if (mounted) {
-        final label = await showModalBottomSheet<String>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => _ManualLabelSheet(
-            labels: widget.appState.supportedLabels,
-            errorMessage: 'AI is currently unavailable. Please select manually.',
-          ),
-        );
-
-        if (label != null && label.isNotEmpty) {
-          if (_batchMode) {
-            setState(() {
-              _batchLabels.add(label);
-              _selectedImage = null;
-            });
-            HapticFeedback.mediumImpact();
-          } else {
-            widget.appState.handleAutoClassification(label, confidence: 1.0);
-            HapticFeedback.mediumImpact();
-            if (mounted) {
-              Navigator.of(context).pop(widget.appState.lastOutcome);
-            }
-          }
-        }
+      if (mounted && loadingShown) {
+        Navigator.of(context, rootNavigator: true).pop();
+        loadingShown = false;
       }
-    }
-  }
+      if (!mounted) return;
 
-  Future<void> _showBatchPreview() async {
-    final suggestions = widget.appState.suggestForLabels(_batchLabels);
-
-    final commit = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _BatchPreviewSheet(
-        batchLabels: _batchLabels,
-        suggestions: suggestions,
-      ),
-    );
-
-    if (commit == true) {
-      widget.appState.addBatchItems(List<String>.from(_batchLabels));
-      HapticFeedback.mediumImpact();
-      if (mounted) Navigator.of(context).pop(widget.appState.lastOutcome);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Scan failed: $e')),
+      );
+      await _offerManualFallback();
+    } finally {
+      _isAnalyzing = false;
     }
   }
 
@@ -222,7 +272,7 @@ class _ScanScreenState extends State<ScanScreen> {
             ],
           ),
           child: Text(
-            _batchMode ? 'Batch Mode' : 'Scan Scrap',
+            'Scan Scrap',
             style: TextStyle(
               color: textColor,
               fontWeight: FontWeight.w700,
@@ -231,41 +281,6 @@ class _ScanScreenState extends State<ScanScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              gradient: _batchMode
-                  ? LinearGradient(colors: [kPrimary.withAlpha(30), kPrimaryLight.withAlpha(15)])
-                  : null,
-              color: _batchMode ? null : cardColor,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: textColor.withAlpha(15),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  _batchMode ? Icons.layers_rounded : Icons.layers_outlined,
-                  key: ValueKey<bool>(_batchMode),
-                  color: _batchMode ? kPrimary : textColor,
-                ),
-              ),
-              tooltip: _batchMode ? 'Batch mode on' : 'Enable batch mode',
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                setState(() => _batchMode = !_batchMode);
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
@@ -273,50 +288,13 @@ class _ScanScreenState extends State<ScanScreen> {
             ? _ImagePreview(
                 image: _selectedImage!,
                 onRetake: () => setState(() => _selectedImage = null),
-                onConfirm: _showLabelSelector,
+                onConfirm: _isAnalyzing ? () {} : _showLabelSelector,
               )
             : _CameraOptions(
                 onCamera: _pickFromCamera,
                 onGallery: _pickFromGallery,
-                batchMode: _batchMode,
-                batchCount: _batchLabels.length,
               ),
       ),
-      floatingActionButton: _batchMode && _batchLabels.isNotEmpty
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)]),
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: kSecondary.withAlpha(60),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: GestureDetector(
-                onTap: _showBatchPreview,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.check_circle_rounded, color: Colors.white, size: 24),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Done (${_batchLabels.length})',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }
@@ -325,14 +303,10 @@ class _CameraOptions extends StatelessWidget {
   const _CameraOptions({
     required this.onCamera,
     required this.onGallery,
-    required this.batchMode,
-    required this.batchCount,
   });
 
   final VoidCallback onCamera;
   final VoidCallback onGallery;
-  final bool batchMode;
-  final int batchCount;
 
   @override
   Widget build(BuildContext context) {
@@ -385,7 +359,7 @@ class _CameraOptions extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               Text(
-                batchMode ? 'Batch Scan Mode' : 'Capture Scrap',
+                'Capture Scrap',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
@@ -394,9 +368,7 @@ class _CameraOptions extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                batchMode
-                    ? 'Scan multiple items, then finish when done'
-                    : 'Take a photo or pick from gallery to identify your food scrap',
+                'Take a photo or pick from gallery to identify your food scrap',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
@@ -404,34 +376,6 @@ class _CameraOptions extends StatelessWidget {
                   height: 1.4,
                 ),
               ),
-              if (batchCount > 0) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [kSecondary.withAlpha(30), kSecondary.withAlpha(15)],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: kSecondary.withAlpha(50)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.layers_rounded, size: 16, color: kSecondary),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$batchCount items queued',
-                        style: const TextStyle(
-                          color: kSecondary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
               const Spacer(),
               // Primary camera button
               GestureDetector(
@@ -525,7 +469,7 @@ class _CameraOptions extends StatelessWidget {
                     const SizedBox(width: 10),
                     Flexible(
                       child: Text(
-                        'Photos are processed locally on your device',
+                        'Photos are analyzed securely with AI',
                         style: TextStyle(
                           fontSize: 13,
                           color: textColor.withAlpha(140),
@@ -858,204 +802,6 @@ class _CornerBracketPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _LabelSelectorSheet extends StatefulWidget {
-  const _LabelSelectorSheet({required this.labels});
-
-  final List<String> labels;
-
-  @override
-  State<_LabelSelectorSheet> createState() => _LabelSelectorSheetState();
-}
-
-class _LabelSelectorSheetState extends State<_LabelSelectorSheet> {
-  String? selectedLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? kDarkSurface : kSurface;
-    final textColor = isDark ? kDarkText : kText;
-
-    return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: textColor.withAlpha(30),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: textColor.withAlpha(60),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'What did you capture?',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Select the food scrap type',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: textColor.withAlpha(140),
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 2.5,
-                  ),
-                  itemCount: widget.labels.length,
-                  itemBuilder: (context, index) {
-                    final label = widget.labels[index];
-                    final isSelected = selectedLabel == label;
-
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() => selectedLabel = label);
-                        HapticFeedback.selectionClick();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          gradient: isSelected
-                              ? LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)])
-                              : null,
-                          color: isSelected ? null : textColor.withAlpha(10),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected ? kSecondary : textColor.withAlpha(30),
-                            width: isSelected ? 2 : 1,
-                          ),
-                        ),
-                        child: Text(
-                          label,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected ? Colors.white : textColor,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: cardColor.withAlpha(230),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: textColor.withAlpha(20)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.close_rounded,
-                              color: textColor.withAlpha(200),
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Cancel',
-                              style: TextStyle(
-                                color: textColor.withAlpha(200),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: selectedLabel != null
-                          ? () {
-                              Navigator.of(context).pop(selectedLabel);
-                              HapticFeedback.mediumImpact();
-                            }
-                          : null,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          gradient: selectedLabel != null
-                              ? LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)])
-                              : null,
-                          color: selectedLabel != null ? null : cardColor.withAlpha(230),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: selectedLabel != null ? kSecondary : textColor.withAlpha(20),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Confirm',
-                              style: TextStyle(
-                                color: selectedLabel != null ? Colors.white : textColor.withAlpha(200),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ManualLabelSheet extends StatefulWidget {
   const _ManualLabelSheet({
     required this.labels,
@@ -1277,230 +1023,6 @@ class _ManualLabelSheetState extends State<_ManualLabelSheet> {
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BatchPreviewSheet extends StatelessWidget {
-  const _BatchPreviewSheet({
-    required this.batchLabels,
-    required this.suggestions,
-  });
-
-  final List<String> batchLabels;
-  final List<dynamic> suggestions;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? kDarkSurface : kSurface;
-    final textColor = isDark ? kDarkText : kText;
-
-    return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: textColor.withAlpha(30),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: textColor.withAlpha(60),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [kSecondary.withAlpha(30), kSecondary.withAlpha(15)],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.layers_rounded, color: kSecondary, size: 26),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Batch Preview',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: textColor,
-                          ),
-                        ),
-                        Text(
-                          '${batchLabels.length} items ready to save',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: textColor.withAlpha(140),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: batchLabels.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: textColor.withAlpha(10),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: textColor.withAlpha(20)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 10,
-                              height: 10,
-                              decoration: const BoxDecoration(
-                                color: kSecondary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              batchLabels[index],
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: textColor,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              if (suggestions.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [kPrimary.withAlpha(15), kPrimaryLight.withAlpha(8)],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: kPrimary.withAlpha(30)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.restaurant_rounded,
-                        size: 20,
-                        color: kPrimary.withAlpha(200),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          '${suggestions.length} recipe ideas found!',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: textColor.withAlpha(160),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(context).pop(false),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: textColor.withAlpha(10),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: textColor.withAlpha(20)),
-                        ),
-                        child: Text(
-                          'Continue',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: textColor.withAlpha(180),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        HapticFeedback.mediumImpact();
-                        Navigator.of(context).pop(true);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)]),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: kSecondary.withAlpha(50),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Text(
-                          'Save All',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
             ],
           ),
         ),

@@ -1,18 +1,58 @@
-
 import 'dart:io';
-import 'package:flutter/services.dart';
+import 'dart:typed_data';
+
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:image/image.dart' as img;
 
 class GeminiService {
   late final GenerativeModel _model;
-  static const String _defaultApiKey = 'AIzaSyBrwRO0hYMStVhsfKFLYaSmpVRGpfFgGvw';
+
+  static const String _prompt =
+      'Identify food scraps in this image. Reply with ONLY valid JSON, no markdown: '
+      '{"food_scraps":[{"item":"<scrap name>"}]}. '
+      'Use short common names (e.g. orange peels, banana peels, coffee grounds). '
+      'If none, use {"food_scraps":[]}.';
 
   GeminiService({String? apiKey}) {
-    final key = apiKey ?? _defaultApiKey;
+    final key = apiKey ?? const String.fromEnvironment('GEMINI_API_KEY');
+    if (key.isEmpty) {
+      throw StateError(
+        'GEMINI_API_KEY is not set. Run with: '
+        'flutter run --dart-define=GEMINI_API_KEY=your_key',
+      );
+    }
     _model = GenerativeModel(
-      model: 'gemini-1.5-pro', // Use pro model for better availability
+      model: 'gemini-2.5-flash',
       apiKey: key,
     );
+  }
+
+  Future<Uint8List> _prepareImageBytes(String imagePath) async {
+    final rawBytes = await File(imagePath).readAsBytes();
+    final decoded = img.decodeImage(rawBytes);
+    if (decoded == null) {
+      return rawBytes;
+    }
+
+    const maxEdge = 1024;
+    final resized = decoded.width > maxEdge || decoded.height > maxEdge
+        ? img.copyResize(
+            decoded,
+            width: decoded.width >= decoded.height ? maxEdge : null,
+            height: decoded.height > decoded.width ? maxEdge : null,
+          )
+        : decoded;
+
+    return Uint8List.fromList(img.encodeJpg(resized, quality: 80));
+  }
+
+  bool _isNonRetryableError(Object e) {
+    final message = e.toString().toLowerCase();
+    return message.contains('api key') ||
+        message.contains('api_key') ||
+        message.contains('permission') ||
+        message.contains('invalid') ||
+        message.contains('quota');
   }
 
   Future<String> analyzeFoodScraps(String imagePath) async {
@@ -21,38 +61,39 @@ class GeminiService {
       return 'Error: Image file not found at $imagePath';
     }
 
-    final imageBytes = await imageFile.readAsBytes();
+    late final Uint8List imageBytes;
+    try {
+      imageBytes = await _prepareImageBytes(imagePath);
+    } catch (e) {
+      return 'Error: Could not process image: $e';
+    }
+
     final content = [
       Content.multi([
-        TextPart(
-            "Analyze this image for food scraps. Identify each type of food scrap present, estimate their quantities, and suggest potential uses or composting methods. Provide the data in a clear, structured format, such as a list or JSON. Here are some examples of what I am looking for:\n\nIf the image contains banana peels and apple cores, output: \n```json\n{\n  \"food_scraps\": [\n    {\n      \"item\": \"banana peels\",\n      \"quantity\": \"2 peels\",\n      \"disposal_method\": \"compost\",\n      \"potential_uses\": \"fertilizer\"\n    },\n    {\n      \"item\": \"apple cores\",\n      \"quantity\": \"3 cores\",\n      \"disposal_method\": \"compost\",\n      \"potential_uses\": \"compost tea\"\n    }\n  ]\n}```\n\nIf the image contains coffee grounds and eggshells, output: \n```json\n{\n  \"food_scraps\": [\n    {\n      \"item\": \"coffee grounds\",\n      \"quantity\": \"1 cup\",\n      \"disposal_method\": \"compost\",\n      \"potential_uses\": \"garden fertilizer, odor neutralizer\"\n    },\n    {\n      \"item\": \"eggshells\",\n      \"quantity\": \"5 shells\",\n      \"disposal_method\": \"compost\",\n      \"potential_uses\": \"calcium supplement for plants\"\n    }\n  ]\n}```\n\nNow, analyze the following image:"
-        ),
+        TextPart(_prompt),
         DataPart('image/jpeg', imageBytes),
       ]),
     ];
 
-    // Retry logic with exponential backoff
-    int maxRetries = 3;
-    Duration delay = const Duration(seconds: 1);
+    const maxAttempts = 2;
+    var delay = const Duration(milliseconds: 500);
 
-    for (int attempt = 0; attempt < maxRetries; attempt++) {
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         final response = await _model.generateContent(content);
         final text = response.text ?? 'No analysis found.';
-        
-        // Extract JSON from markdown code blocks if present
+
         final jsonPattern = RegExp(r'```json\s*([\s\S]*?)\s*```');
         final match = jsonPattern.firstMatch(text);
-        
+
         if (match != null) {
           return match.group(1) ?? text;
         }
-        
+
         return text;
       } catch (e) {
-        if (attempt == maxRetries - 1) {
-          // Final attempt failed
-          if (e.toString().contains('resource_exhausted') || 
+        if (_isNonRetryableError(e) || attempt == maxAttempts - 1) {
+          if (e.toString().contains('resource_exhausted') ||
               e.toString().contains('model provider')) {
             return 'Error: Gemini API is currently overloaded. Please try again in a few moments.';
           }
@@ -61,13 +102,12 @@ class GeminiService {
           }
           return 'Error during API call: $e';
         }
-        
-        // Wait before retrying with exponential backoff
+
         await Future.delayed(delay);
         delay *= 2;
       }
     }
 
-    return 'Error: Failed after $maxRetries attempts';
+    return 'Error: Failed after $maxAttempts attempts';
   }
 }

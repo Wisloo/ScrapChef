@@ -2,7 +2,82 @@ import '../models.dart';
 import 'mealdb_service.dart';
 
 class RecipeService {
+  RecipeService();
+
   final MealDBService _mealDBService = MealDBService();
+
+  /// Friendly labels for manual pickers and fallbacks.
+  static const List<String> supportedLabels = [
+    'Banana peel',
+    'Citrus peel',
+    'Apple core & peel',
+    'Broccoli stem',
+    'Cabbage core',
+    'Cauliflower core',
+    'Carrot peel',
+    'Cucumber peel',
+    'Onion skin',
+    'Potato peel',
+    'Tomato trimmings',
+    'Leafy trimmings',
+    'Bean pod',
+    'Corn husk',
+    'Coffee grounds',
+    'Eggshells',
+    'Mixed fruit scraps',
+    'Mixed vegetable scraps',
+  ];
+
+  static const Map<String, String> _labelAliases = {
+    'orange peels': 'citrus_peel',
+    'orange peel': 'citrus_peel',
+    'orange': 'citrus_peel',
+    'lemon peels': 'citrus_peel',
+    'lemon peel': 'citrus_peel',
+    'lemon': 'citrus_peel',
+    'lime peels': 'citrus_peel',
+    'lime peel': 'citrus_peel',
+    'lime': 'citrus_peel',
+    'grapefruit peel': 'citrus_peel',
+    'citrus peels': 'citrus_peel',
+    'citrus peel': 'citrus_peel',
+    'banana peels': 'banana_peel',
+    'banana peel': 'banana_peel',
+    'banana': 'banana_peel',
+    'apple cores': 'apple_core_peel',
+    'apple core': 'apple_core_peel',
+    'apple peels': 'apple_core_peel',
+    'apple peel': 'apple_core_peel',
+    'coffee grounds': 'food_waste',
+    'coffee ground': 'food_waste',
+    'eggshells': 'food_waste',
+    'eggshell': 'food_waste',
+    'potato peels': 'potato_peel',
+    'potato peel': 'potato_peel',
+    'potato skins': 'potato_peel',
+    'onion skins': 'onion_skin',
+    'onion skin': 'onion_skin',
+    'carrot peels': 'carrot_peel',
+    'carrot peel': 'carrot_peel',
+    'broccoli stems': 'broccoli_stem',
+    'broccoli stem': 'broccoli_stem',
+    'leafy greens': 'leafy_trimmings',
+    'salad trimmings': 'leafy_trimmings',
+    'mixed scraps': 'food_waste',
+    'food scraps': 'food_waste',
+    'food scrap': 'food_waste',
+    'apple core & peel': 'apple_core_peel',
+    'cabbage core': 'cabbage_core',
+    'cauliflower core': 'cauliflower_core',
+    'cucumber peel': 'cucumber_peel',
+    'tomato trimmings': 'tomato_trimmings',
+    'bean pod': 'bean_pod',
+    'corn husk': 'corn_husk',
+    'mixed fruit scraps': 'fruit_scraps',
+    'mixed vegetable scraps': 'vegetable_scraps',
+    'vegetable scraps': 'vegetable_scraps',
+    'fruit scraps': 'fruit_scraps',
+  };
 
   List<RecipeSuggestion> suggest(List<ScrapItem> inventory) {
     final labels = inventory.map((item) => item.label).toList();
@@ -77,16 +152,29 @@ class RecipeService {
     );
   }
 
+  String _canonicalizeLabel(String label) {
+    final value = label.toLowerCase().trim();
+    if (value.isEmpty) return value;
+    return _labelAliases[value] ?? value;
+  }
+
   Set<String> _normalizeLabels(Iterable<String> labels) {
     final normalized = <String>{};
     for (final label in labels) {
       final value = label.toLowerCase().trim();
       if (value.isEmpty) continue;
+
+      final canonical = _canonicalizeLabel(value);
       normalized.add(value);
+      normalized.add(canonical);
       normalized.addAll(value.split(RegExp(r'[\s\-_]+')));
+      normalized.addAll(canonical.split(RegExp(r'[\s\-_]+')));
     }
     if (normalized.contains('food') && normalized.contains('waste')) {
       normalized.add('food_waste');
+    }
+    if (normalized.contains('peel') || normalized.contains('peels')) {
+      normalized.add('citrus_peel');
     }
     return normalized;
   }
@@ -139,6 +227,22 @@ class RecipeService {
       'spinach': ['leafy', 'quick', 'tender'],
       'lettuce': ['leafy', 'fresh', 'crunch'],
       'food_waste': ['mixed', 'scrap', 'simmer'],
+      'orange': ['bright', 'aromatic', 'zest'],
+      'lemon': ['bright', 'aromatic', 'zest'],
+      'lime': ['bright', 'aromatic', 'zest'],
+      'peel': ['bright', 'aromatic', 'zest'],
+      'peels': ['bright', 'aromatic', 'zest'],
+      'core': ['sweet', 'fruity', 'bake'],
+      'cores': ['sweet', 'fruity', 'bake'],
+      'grounds': ['mixed', 'scrap', 'simmer'],
+      'eggshell': ['mixed', 'scrap', 'simmer'],
+      'eggshells': ['mixed', 'scrap', 'simmer'],
+      'coffee': ['mixed', 'scrap', 'simmer'],
+      'stem': ['brassica', 'roast', 'savory'],
+      'stems': ['brassica', 'roast', 'savory'],
+      'skin': ['aromatic', 'stock', 'savory'],
+      'skins': ['aromatic', 'stock', 'savory'],
+      'trimmings': ['leafy', 'quick', 'tender'],
     };
 
     for (final entry in mapping.entries) {
