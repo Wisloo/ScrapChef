@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../state/app_state.dart';
 import '../services/sound_service.dart';
+import '../services/preferences_service.dart';
 import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -16,14 +17,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool isDarkMode = false;
-  bool hapticFeedback = true;
-
   @override
   void initState() {
     super.initState();
-    // Initialize haptic feedback from SoundService
-    hapticFeedback = true; // Default to enabled
   }
 
   @override
@@ -121,15 +117,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 _ToggleTile(
-                  icon: isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                  icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                   iconColor: kPrimary,
                   title: 'Dark Mode',
                   subtitle: 'Switch between light and dark theme',
-                  value: isDarkMode,
+                  value: isDark,
                   textColor: textColor,
                   onChanged: (value) {
                     HapticFeedback.mediumImpact();
-                    setState(() => isDarkMode = value);
                     widget.onThemeChanged(value);
                     _showThemeSnackBar(value);
                   },
@@ -149,12 +144,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               iconColor: kSecondary,
               title: 'Haptic Feedback',
               subtitle: 'Vibrate on button presses',
-              value: hapticFeedback,
+              value: SoundService.isEnabled,
               textColor: textColor,
-              onChanged: (value) {
+              onChanged: (value) async {
                 if (value) HapticFeedback.mediumImpact();
-                setState(() => hapticFeedback = value);
                 SoundService.setEnabled(value);
+                await PreferencesService.setHapticFeedback(value);
+                setState(() {});
                 _showHapticSnackBar(value);
               },
             ),

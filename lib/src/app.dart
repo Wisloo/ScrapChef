@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'services/gemini_service.dart';
 import 'services/recipe_service.dart';
+import 'services/preferences_service.dart';
+import 'services/sound_service.dart';
 import 'state/app_state.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
@@ -25,12 +27,21 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
   @override
   void initState() {
     super.initState();
+    _loadPreferences();
     appState = AppState(
       classifierService: GeminiService(
         apiKey: const String.fromEnvironment('GEMINI_API_KEY'),
       ),
       recipeService: RecipeService(),
     );
+  }
+
+  Future<void> _loadPreferences() async {
+    await PreferencesService.loadPreferences();
+    await SoundService.init();
+    setState(() {
+      isDarkMode = PreferencesService.isDarkMode;
+    });
   }
 
   @override
@@ -52,8 +63,9 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
         } else if (appState.isSignedIn) {
           startScreen = HomeScreen(
             appState: appState,
-            onThemeChanged: (value) {
+            onThemeChanged: (value) async {
               setState(() => isDarkMode = value);
+              await PreferencesService.setDarkMode(value);
             },
           );
         } else {

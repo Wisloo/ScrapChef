@@ -6,6 +6,7 @@ import 'manual_verify_screen.dart';
 import 'scan_screen.dart';
 import 'settings_screen.dart';
 import 'recipe_detail_screen.dart';
+import 'recipe_list_screen.dart';
 
 // Food-inspired warm palette
 const Color kRecipeWarmBrown = Color(0xFF8B7355);    // Primary
@@ -120,6 +121,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _openRecipes(List<String> labels) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RecipeListScreen(
+          appState: widget.appState,
+          labels: labels,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final outcome = widget.appState.lastOutcome;
@@ -166,7 +178,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   tabs: <Widget>[
                     Tab(text: 'Scan'),
                     Tab(text: 'Bin'),
-                    Tab(text: 'Recipes'),
                   ],
                 ),
               ),
@@ -175,8 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: TabBarView(
                   children: <Widget>[
                     _ScanTab(outcome: outcome, itemsLogged: itemsLogged),
-                    _InventoryTab(items: inventory, onBatchSelect: _onBatchSelect, appState: widget.appState),
-                    _RecipeTab(recipes: suggestions, batchLabels: latestBatchLabels, appState: widget.appState),
+                    _InventoryTab(items: inventory, onBatchSelect: _onBatchSelect, appState: widget.appState, onOpenRecipes: _openRecipes),
                   ],
                 ),
               ),
@@ -475,11 +485,12 @@ class _ScanTab extends StatelessWidget {
 }
 
 class _InventoryTab extends StatefulWidget {
-  const _InventoryTab({required this.items, required this.onBatchSelect, required this.appState});
+  const _InventoryTab({required this.items, required this.onBatchSelect, required this.appState, required this.onOpenRecipes});
 
   final List<ScrapItem> items;
   final Function(List<String>) onBatchSelect;
   final AppState appState;
+  final Function(List<String>) onOpenRecipes;
 
   @override
   State<_InventoryTab> createState() => _InventoryTabState();
@@ -506,7 +517,14 @@ class _InventoryTabState extends State<_InventoryTab> {
 
   void _findRecipesForSelected() {
     if (_selectedItems.isNotEmpty) {
-      widget.onBatchSelect(_selectedItems.toList());
+      widget.onOpenRecipes(_selectedItems.toList());
+    }
+  }
+
+  void _findRecipesForAll() {
+    if (widget.items.isNotEmpty) {
+      final labels = widget.items.map((item) => item.label).toList();
+      widget.onOpenRecipes(labels);
     }
   }
 
@@ -528,7 +546,7 @@ class _InventoryTabState extends State<_InventoryTab> {
                   ),
                 ),
               ),
-              if (widget.items.isNotEmpty)
+              if (widget.items.isNotEmpty) ...[
                 TextButton(
                   onPressed: () {
                     showDialog(
@@ -558,6 +576,20 @@ class _InventoryTabState extends State<_InventoryTab> {
                     style: TextStyle(color: kCookingTerracotta, fontWeight: FontWeight.w600),
                   ),
                 ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _findRecipesForAll,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kCookingTerracotta,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Find Recipes'),
+                ),
+              ],
             ],
           ),
         ),

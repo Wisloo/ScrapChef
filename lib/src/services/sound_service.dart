@@ -1,14 +1,22 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'preferences_service.dart';
 
 /// Simple sound service using system sounds
 /// For a real app, you'd use audioplayers package with custom sounds
 class SoundService {
   static bool _enabled = true;
 
+  static bool get isEnabled => _enabled;
+
   static void setEnabled(bool enabled) {
     _enabled = enabled;
+  }
+
+  /// Initialize with saved preference
+  static Future<void> init() async {
+    _enabled = PreferencesService.isHapticFeedbackEnabled;
   }
 
   /// Success chime - high pitch, happy

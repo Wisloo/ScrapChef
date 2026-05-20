@@ -1,0 +1,184 @@
+import 'package:flutter/material.dart';
+
+import '../models.dart';
+import '../state/app_state.dart';
+import 'recipe_detail_screen.dart';
+
+// Food-inspired warm palette
+const Color kRecipeWarmBrown = Color(0xFF8B7355);
+const Color kCookingTerracotta = Color(0xFFC17A4A);
+const Color kSketchCharcoal = Color(0xFF6B5D4F);
+const Color kPaperCream = Color(0xFFFAF8F5);
+const Color kHerbSage = Color(0xFFD4E5D0);
+const Color kCaptionGray = Color(0xFF9A8B7E);
+
+class RecipeListScreen extends StatelessWidget {
+  const RecipeListScreen({super.key, required this.appState, required this.labels});
+
+  final AppState appState;
+  final List<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    final recipes = appState.suggestForLabels(labels);
+
+    return Scaffold(
+      backgroundColor: kPaperCream,
+      appBar: AppBar(
+        backgroundColor: kPaperCream,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_rounded, color: kSketchCharcoal),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Recipe Ideas',
+          style: TextStyle(
+            color: kRecipeWarmBrown,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: recipes.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.restaurant_menu_outlined,
+                      size: 64,
+                      color: kCaptionGray,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No recipes found',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: kSketchCharcoal,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Try adding more scraps to your bin',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: kCaptionGray,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: recipes
+                  .map(
+                    (recipe) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => RecipeDetailScreen(
+                                recipe: recipe,
+                                appState: appState,
+                              ),
+                            ),
+                          );
+                        },
+                        child: _RecipeCard(recipe: recipe),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+    );
+  }
+}
+
+class _RecipeCard extends StatelessWidget {
+  const _RecipeCard({required this.recipe});
+
+  final RecipeSuggestion recipe;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: const Color.fromRGBO(139, 115, 85, 0.15),
+          width: 1.5,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color.fromRGBO(0, 0, 0, 0.06),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  recipe.title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: kRecipeWarmBrown,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color.fromRGBO(193, 122, 74, 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.restaurant_menu, size: 16, color: kCookingTerracotta),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            recipe.summary,
+            style: TextStyle(
+              fontSize: 13,
+              color: kSketchCharcoal,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color.fromRGBO(212, 229, 208, 0.25),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              recipe.matchReason,
+              style: TextStyle(
+                fontSize: 12,
+                color: kRecipeWarmBrown,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
