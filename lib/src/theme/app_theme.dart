@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // Vibrant earthy colors from backup
 const Color kPrimary = Color(0xFF8B7355);    // Warm Brown
@@ -12,6 +13,13 @@ const Color kTextLight = Color(0xFF9A8B7E);  // Caption Gray
 const Color kDivider = Color(0xFFE0D5C5);    // Light Beige
 const Color kMuted = Color(0xFF7A6958);      // Muted
 const Color kSuccess = Color(0xFFD4E5D0);     // Herb Sage
+// Additional colors for improved UI
+const Color kError = Color(0xFFE57373); // Soft Red for errors
+const Color kErrorDark = Color(0xFFC75B5B);
+const Color kAccentDark = Color(0xFF8A7A6C); // Dark mode accent variant
+const Color kSecondaryLight = Color(0xFFD99A6F); // Dark mode secondary variant
+const Color kDarkSuccess = Color(0xFF3A4B3A); // Dark mode success variant
+// (duplicate block removed)
 
 const Color kDarkBackground = Color(0xFF1E1A16);
 const Color kDarkSurface = Color(0xFF2C251F);
@@ -89,48 +97,48 @@ ThemeData buildLightTheme() {
       labelStyle: const TextStyle(color: kTextLight),
       hintStyle: const TextStyle(color: kMuted),
     ),
-    textTheme: const TextTheme(
-      headlineLarge: TextStyle(
+    textTheme: TextTheme(
+      headlineLarge: GoogleFonts.lora(
         fontSize: 32,
         fontWeight: FontWeight.w800,
         color: kText,
         letterSpacing: -0.5,
       ),
-      headlineMedium: TextStyle(
+      headlineMedium: GoogleFonts.lora(
         fontSize: 26,
         fontWeight: FontWeight.w800,
         color: kText,
         letterSpacing: -0.5,
       ),
-      headlineSmall: TextStyle(
+      headlineSmall: GoogleFonts.lora(
         fontSize: 22,
         fontWeight: FontWeight.w700,
         color: kText,
       ),
-      titleLarge: TextStyle(
+      titleLarge: GoogleFonts.lora(
         fontSize: 18,
         fontWeight: FontWeight.w700,
         color: kText,
       ),
-      titleMedium: TextStyle(
+      titleMedium: GoogleFonts.openSans(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: kText,
       ),
-      bodyLarge: TextStyle(
+      bodyLarge: GoogleFonts.openSans(
         fontSize: 16,
         color: kText,
-        height: 1.5,
+        height: 1.6,
       ),
-      bodyMedium: TextStyle(
+      bodyMedium: GoogleFonts.openSans(
         fontSize: 14,
         color: kText,
-        height: 1.5,
+        height: 1.6,
       ),
-      bodySmall: TextStyle(
+      bodySmall: GoogleFonts.openSans(
         fontSize: 12,
         color: kTextLight,
-        height: 1.4,
+        height: 1.5,
       ),
     ),
   );
@@ -205,48 +213,48 @@ ThemeData buildDarkTheme() {
       labelStyle: const TextStyle(color: kDarkTextLight),
       hintStyle: const TextStyle(color: kDarkTextLight),
     ),
-    textTheme: const TextTheme(
-      headlineLarge: TextStyle(
+    textTheme: TextTheme(
+      headlineLarge: GoogleFonts.lora(
         fontSize: 32,
         fontWeight: FontWeight.w800,
         color: kDarkText,
         letterSpacing: -0.5,
       ),
-      headlineMedium: TextStyle(
+      headlineMedium: GoogleFonts.lora(
         fontSize: 26,
         fontWeight: FontWeight.w800,
         color: kDarkText,
         letterSpacing: -0.5,
       ),
-      headlineSmall: TextStyle(
+      headlineSmall: GoogleFonts.lora(
         fontSize: 22,
         fontWeight: FontWeight.w700,
         color: kDarkText,
       ),
-      titleLarge: TextStyle(
+      titleLarge: GoogleFonts.lora(
         fontSize: 18,
         fontWeight: FontWeight.w700,
         color: kDarkText,
       ),
-      titleMedium: TextStyle(
+      titleMedium: GoogleFonts.openSans(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: kDarkText,
       ),
-      bodyLarge: TextStyle(
+      bodyLarge: GoogleFonts.openSans(
         fontSize: 16,
         color: kDarkText,
-        height: 1.5,
+        height: 1.6,
       ),
-      bodyMedium: TextStyle(
+      bodyMedium: GoogleFonts.openSans(
         fontSize: 14,
         color: kDarkText,
-        height: 1.5,
+        height: 1.6,
       ),
-      bodySmall: TextStyle(
+      bodySmall: GoogleFonts.openSans(
         fontSize: 12,
         color: kDarkTextLight,
-        height: 1.4,
+        height: 1.5,
       ),
     ),
   );

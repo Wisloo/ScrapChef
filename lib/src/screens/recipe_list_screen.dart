@@ -12,16 +12,38 @@ const Color kPaperCream = Color(0xFFFAF8F5);
 const Color kHerbSage = Color(0xFFD4E5D0);
 const Color kCaptionGray = Color(0xFF9A8B7E);
 
-class RecipeListScreen extends StatelessWidget {
+class RecipeListScreen extends StatefulWidget {
   const RecipeListScreen({super.key, required this.appState, required this.labels});
 
   final AppState appState;
   final List<String> labels;
 
   @override
-  Widget build(BuildContext context) {
-    final recipes = appState.suggestForLabels(labels);
+  State<RecipeListScreen> createState() => _RecipeListScreenState();
+}
 
+class _RecipeListScreenState extends State<RecipeListScreen> {
+  List<RecipeSuggestion> recipes = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecipes();
+  }
+
+  Future<void> _loadRecipes() async {
+    final loadedRecipes = await widget.appState.suggestForLabels(widget.labels);
+    if (mounted) {
+      setState(() {
+        recipes = loadedRecipes;
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kPaperCream,
       appBar: AppBar(
@@ -40,62 +62,64 @@ class RecipeListScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: recipes.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.restaurant_menu_outlined,
-                      size: 64,
-                      color: kCaptionGray,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : recipes.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.restaurant_menu_outlined,
+                          size: 64,
+                          color: kCaptionGray,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No recipes found',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: kSketchCharcoal,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Try adding more scraps to your bin',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: kCaptionGray,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No recipes found',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: kSketchCharcoal,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Try adding more scraps to your bin',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: kCaptionGray,
-                      ),
-                    ),
-                  ],
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: recipes
+                      .map(
+                        (recipe) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => RecipeDetailScreen(
+                                    recipe: recipe,
+                                    appState: widget.appState,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: _RecipeCard(recipe: recipe),
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
-              ),
-            )
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: recipes
-                  .map(
-                    (recipe) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => RecipeDetailScreen(
-                                recipe: recipe,
-                                appState: appState,
-                              ),
-                            ),
-                          );
-                        },
-                        child: _RecipeCard(recipe: recipe),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
     );
   }
 }

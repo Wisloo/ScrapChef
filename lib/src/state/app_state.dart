@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 
 import '../models.dart';
 import '../services/firebase_auth_service.dart';
@@ -37,6 +38,10 @@ class AppState extends ChangeNotifier {
   ScanOutcome? _lastOutcome;
   bool _isBootstrapping = true;
   bool _isLoadingRecipes = false;
+  bool _authFailed = false;
+  
+  // Track recent items to prevent duplicates
+  final Map<String, DateTime> _recentlyAddedItems = <String, DateTime>{};
 
   List<String> get supportedLabels => RecipeService.supportedLabels;
 
@@ -45,6 +50,7 @@ class AppState extends ChangeNotifier {
   bool get isReady => !_isBootstrapping;
 
   bool get isSignedIn => _authService.isSignedIn;
+  bool get authFailed => _authFailed;
 
   String? get currentUserEmail => _authService.userEmail;
 
@@ -82,19 +88,20 @@ class AppState extends ChangeNotifier {
 
   /// Recipes use full inventory plus the latest scan for better matches.
   List<RecipeSuggestion> get activeRecipeSuggestions {
-    final labels = <String>{
+    final labels = [
       ..._inventory.map((item) => item.label),
       ..._latestBatchLabels,
-    };
+    ];
     if (labels.isEmpty) {
       return recipeSuggestions;
     }
-    return _recipeService.suggestForLabels(labels);
+    // Use static suggestions for now since suggestForLabels is async
+    return _recipeService.suggest(_inventory);
   }
 
   /// Suggest recipes for an explicit set of labels (useful for previewing a batch before committing).
-  List<RecipeSuggestion> suggestForLabels(Iterable<String> labels) {
-    return _recipeService.suggestForLabels(labels);
+  Future<List<RecipeSuggestion>> suggestForLabels(Iterable<String> labels) async {
+    return await _recipeService.suggestForLabels(labels);
   }
 
   Future<void> signUp(String email, String password) async {
@@ -314,26 +321,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addManualItem(String label) {
-    _lastOutcome = ScanOutcome(
-      predictedLabel: label,
-      confidence: 1.0,
-      recommendedAction: 'Manually added item.',
-      requiresReview: false,
-      note: 'Added without scan.',
-    );
-    _logItem(label: label, confidence: 1.0, source: 'manual-entry', manualCorrection: true);
-
-    _latestBatchLabels
-      ..clear()
-      ..add(label);
-    
-    // Play success sound
-    SoundService.playSuccess();
-
-    notifyListeners();
-  }
-
   void clearBin() {
     _inventory.clear();
     _latestBatchLabels.clear();
@@ -351,25 +338,41 @@ class AppState extends ChangeNotifier {
   Future<void> _bootstrap() async {
     try {
       // No explicit initialize for GeminiService, as it's initialized in constructor
-      // Listen to auth state changes
+      // Listen to auth state changes with a timeout
+      final Completer<void> authCompleter = Completer<void>();
       _authService.authStateChanges.listen((user) {
+        // Complete the completer regardless of whether user is null or not
+        // This ensures we don't wait indefinitely
+        authCompleter.complete();
         if (user != null) {
+          // Load data asynchronously without blocking app startup
           _reloadSavedRecipes();
           _reloadScraps();
-        } else {
-          _savedRecipes.clear();
-          _inventory.clear();
         }
       });
+      
+      // Timeout after 5 seconds if auth state never fires
+      Future.delayed(const Duration(seconds: 5), () {
+        if (!authCompleter.isCompleted) {
+          print("Warning: Auth state change listener timed out after 5s - proceeding without auth.");
+          _authFailed = true;
+          authCompleter.complete();
+        }
+      });
+      
+      // Wait for auth to complete (either by firing or by timeout)
+      await authCompleter.future;
 
-      // Try to restore existing session
+      // Don't wait for Firebase data loading - let it happen in background
+      // The app should become ready immediately
       if (_authService.isSignedIn) {
-        await _reloadSavedRecipes();
-        await _reloadScraps();
+        // Start loading data asynchronously without blocking
+        _reloadSavedRecipes();
+        _reloadScraps();
       }
 
       // No isLoaded check for GeminiService
-      print("GeminiService initialized successfully (API key must be set).");
+      print("GeminiService initialized successfully.");
     } catch (e) {
       print("Failed to initialize app: $e");
     } finally {
@@ -389,7 +392,14 @@ class AppState extends ChangeNotifier {
       notifyListeners();
 
       _savedRecipes.clear();
-      final recipes = await _recipeStore.loadRecipes(_authService.userId!);
+      
+      // Add timeout to prevent indefinite waiting
+      final recipes = await _recipeStore.loadRecipes(_authService.userId!)
+          .timeout(const Duration(seconds: 10), onTimeout: () {
+        print('[_reloadSavedRecipes] Timeout loading recipes from Firebase');
+        return <SavedRecipeRecord>[]; // Return empty list on timeout
+      });
+      
       _savedRecipes.addAll(recipes);
     } catch (e) {
       print('Failed to load saved recipes: $e');
@@ -406,8 +416,17 @@ class AppState extends ChangeNotifier {
     }
 
     try {
+      print('[_reloadScraps] Loading scraps from Firebase...');
       _inventory.clear();
-      final scraps = await _scrapStore.loadScraps(_authService.userId!);
+      
+      // Add timeout to prevent indefinite waiting
+      final scraps = await _scrapStore.loadScraps(_authService.userId!)
+          .timeout(const Duration(seconds: 10), onTimeout: () {
+        print('[_reloadScraps] Timeout loading scraps from Firebase');
+        return <ScrapItem>[]; // Return empty list on timeout
+      });
+      
+      print('[_reloadScraps] Loaded ${scraps.length} scraps from Firebase');
       _inventory.addAll(scraps);
       notifyListeners();
     } catch (e) {
@@ -422,15 +441,36 @@ class AppState extends ChangeNotifier {
     bool manualCorrection = false,
     double? weightGrams,
   }) {
+    final normalizedLabel = label.toLowerCase().trim();
+    final now = DateTime.now();
+    
+    // Check if this item was recently added (within 5 seconds)
+    if (_recentlyAddedItems.containsKey(normalizedLabel)) {
+      final lastAdded = _recentlyAddedItems[normalizedLabel]!;
+      final timeSinceLastAdd = now.difference(lastAdded);
+      if (timeSinceLastAdd.inSeconds < 5) {
+        print('[_logItem] Skipping duplicate item: label="$label" was added ${timeSinceLastAdd.inSeconds} seconds ago');
+        return;
+      }
+    }
+    
+    print('[_logItem] Adding item: label="$label", source="$source", confidence=$confidence, manualCorrection=$manualCorrection');
+    
     final scrap = ScrapItem(
       label: label,
       weightGrams: weightGrams,
-      loggedAt: DateTime.now(),
+      loggedAt: now,
       source: source,
       confidence: confidence,
       manualCorrection: manualCorrection,
     );
     _inventory.insert(0, scrap);
+    
+    // Track this item as recently added
+    _recentlyAddedItems[normalizedLabel] = now;
+    
+    // Clean up old entries (older than 10 seconds)
+    _recentlyAddedItems.removeWhere((key, value) => now.difference(value).inSeconds > 10);
 
     // Save to Firebase if user is signed in
     if (_authService.isSignedIn && _authService.userId != null) {

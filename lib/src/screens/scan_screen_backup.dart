@@ -90,7 +90,7 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   Future<void> _showBatchPreview() async {
-    final suggestions = widget.appState.suggestForLabels(_batchLabels);
+    final suggestions = await widget.appState.suggestForLabels(_batchLabels);
 
     final commit = await showModalBottomSheet<bool>(
       context: context,

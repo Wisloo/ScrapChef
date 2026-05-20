@@ -7,10 +7,11 @@ import '../services/preferences_service.dart';
 import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, required this.appState, required this.onThemeChanged});
+  const SettingsScreen({super.key, required this.appState, required this.onThemeChanged, required this.isDarkMode});
 
   final AppState appState;
   final ValueChanged<bool> onThemeChanged;
+  final bool isDarkMode;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -24,7 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = widget.isDarkMode;
     final bgColor = isDark ? kDarkBackground : kBackground;
     final cardColor = isDark ? kDarkSurface : kSurface;
     final textColor = isDark ? kDarkText : kText;
@@ -117,11 +118,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 _ToggleTile(
-                  icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                  icon: widget.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                   iconColor: kPrimary,
                   title: 'Dark Mode',
                   subtitle: 'Switch between light and dark theme',
-                  value: isDark,
+                  value: widget.isDarkMode,
                   textColor: textColor,
                   onChanged: (value) {
                     HapticFeedback.mediumImpact();

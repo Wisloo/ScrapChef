@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (label != null && label.isNotEmpty) {
-      widget.appState.addManualItem(label);
+      widget.appState.simulateScan(label);
     }
   }
 
@@ -495,7 +495,7 @@ class _StepRow extends StatelessWidget {
             color: const Color.fromRGBO(139, 115, 85, 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(number, style: const TextStyle(fontWeight: FontWeight.w700, color: kDarkGreen)),
+          child: Text(number, style: const TextStyle(fontWeight: FontWeight.w700, color: kSketchCharcoal)),
         ),
         const SizedBox(width: 10),
         Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),

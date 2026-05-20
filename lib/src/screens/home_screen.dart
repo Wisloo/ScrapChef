@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_card.dart';
+import '../widgets/app_button.dart';
 
 import '../models.dart';
 import '../state/app_state.dart';
+import '../services/sound_service.dart';
 import 'manual_verify_screen.dart';
 import 'scan_screen.dart';
 import 'settings_screen.dart';
-import 'recipe_detail_screen.dart';
 import 'recipe_list_screen.dart';
 
 // Food-inspired warm palette
@@ -17,25 +19,20 @@ const Color kHerbSage = Color(0xFFD4E5D0);           // Success
 const Color kCaptionGray = Color(0xFF9A8B7E);        // Muted text
 const Color kInkDark = Color(0xFF3C3C3C);            // Very dark
 
-// Legacy names for compatibility
-const Color kPrimaryGreen = kRecipeWarmBrown;
-const Color kDarkGreen = kSketchCharcoal;
-const Color kAccentOrange = kCookingTerracotta;
-const Color kLightBeige = kPaperCream;
-const Color kMintGreen = kHerbSage;
+// Legacy names removed – use theme colors directly
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.appState, required this.onThemeChanged});
+  const HomeScreen({super.key, required this.appState, required this.onThemeChanged, required this.isDarkMode});
 
   final AppState appState;
   final ValueChanged<bool> onThemeChanged;
+  final bool isDarkMode;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<String> _batchSelectedLabels = [];
 
   @override
   void initState() {
@@ -56,11 +53,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onBatchSelect(List<String> selectedLabels) {
-    setState(() {
-      _batchSelectedLabels = selectedLabels;
-    });
-    // Switch to recipes tab
-    DefaultTabController.of(context).animateTo(2);
+    // Navigate to recipes screen instead of switching tabs
+    _openRecipes(selectedLabels);
   }
 
   Future<void> _openScanFlow() async {
@@ -88,40 +82,29 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final label = outcome.predictedLabel;
-    DefaultTabController.of(context).animateTo(2);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Logged $label — see recipe ideas.'),
+        content: Text('Logged $label — tap Find Recipes for ideas.'),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  Future<void> _addManualItem() async {
-    final label = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _ManualAddSheet(labels: widget.appState.supportedLabels),
-    );
-
-    if (label != null && label.isNotEmpty) {
-      widget.appState.addManualItem(label);
-    }
-  }
-
   void _openSettings() {
+    SoundService.playClick();
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => SettingsScreen(
           appState: widget.appState,
           onThemeChanged: widget.onThemeChanged,
+          isDarkMode: widget.isDarkMode,
         ),
       ),
     );
   }
 
   void _openRecipes(List<String> labels) {
+    SoundService.playClick();
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RecipeListScreen(
@@ -136,23 +119,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final outcome = widget.appState.lastOutcome;
     final inventory = widget.appState.inventory;
-    final suggestions = _batchSelectedLabels.isNotEmpty
-        ? widget.appState.suggestForLabels(_batchSelectedLabels)
-        : widget.appState.activeRecipeSuggestions;
-    final latestBatchLabels = _batchSelectedLabels.isNotEmpty
-        ? _batchSelectedLabels
-        : widget.appState.latestBatchLabels;
     final itemsLogged = widget.appState.itemsLogged;
     final estimatedSavings = widget.appState.estimatedSavings;
 
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
-        backgroundColor: kPaperCream,
-        body: SafeArea(
-          child: Column(
-            children: <Widget>[
-              Padding(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: CustomScrollView(
+          slivers: <Widget>[
+            SliverToBoxAdapter(
+              child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                 child: _HeroHeader(
                   itemsLogged: itemsLogged,
@@ -160,38 +137,45 @@ class _HomeScreenState extends State<HomeScreen> {
                   onSettingsTap: _openSettings,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: _ActionPanel(
                   onScan: _openScanFlow,
-                  onManualAdd: _addManualItem,
                 ),
               ),
-              const SizedBox(height: 12),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+            ),
+            SliverToBoxAdapter(
+              child: const SizedBox(height: 12),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: TabBar(
-                  labelColor: kRecipeWarmBrown,
-                  unselectedLabelColor: kCaptionGray,
-                  indicatorColor: kCookingTerracotta,
+                  labelColor: Theme.of(context).colorScheme.primary,
+                  unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                  indicatorColor: Theme.of(context).colorScheme.secondary,
                   indicatorWeight: 3,
-                  tabs: <Widget>[
+                  tabs: const <Widget>[
                     Tab(text: 'Scan'),
                     Tab(text: 'Bin'),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: TabBarView(
-                  children: <Widget>[
-                    _ScanTab(outcome: outcome, itemsLogged: itemsLogged),
-                    _InventoryTab(items: inventory, onBatchSelect: _onBatchSelect, appState: widget.appState, onOpenRecipes: _openRecipes),
-                  ],
-                ),
+            ),
+            SliverToBoxAdapter(
+              child: const SizedBox(height: 12),
+            ),
+            SliverFillRemaining(
+              child: TabBarView(
+                children: <Widget>[
+                  _ScanTab(outcome: outcome, itemsLogged: itemsLogged),
+                  _InventoryTab(items: inventory, onBatchSelect: _onBatchSelect, appState: widget.appState, onOpenRecipes: _openRecipes),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -207,23 +191,12 @@ class _HeroHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: kSketchCharcoal,
-          width: 1.5,
-          strokeAlign: BorderSide.strokeAlignOutside,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.08),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
+      border: Border.all(
+        color: kSketchCharcoal,
+        width: 1.5,
+        strokeAlign: BorderSide.strokeAlignOutside,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,7 +214,6 @@ class _HeroHeader extends StatelessWidget {
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             color: kRecipeWarmBrown,
                             fontWeight: FontWeight.w800,
-                            fontFamily: 'serif',
                           ),
                     ),
                     const SizedBox(height: 2),
@@ -338,85 +310,21 @@ class _HeroHeader extends StatelessWidget {
 }
 
 class _ActionPanel extends StatelessWidget {
-  const _ActionPanel({required this.onScan, required this.onManualAdd});
+  const _ActionPanel({required this.onScan});
 
   final VoidCallback onScan;
-  final VoidCallback onManualAdd;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: GestureDetector(
-            onTap: onScan,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-              decoration: BoxDecoration(
-                color: kCookingTerracotta,
-                border: Border.all(
-                  color: const Color.fromRGBO(107, 93, 79, 0.3),
-                  width: 1.5,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: const <BoxShadow>[
-                  BoxShadow(
-                    color: Color.fromRGBO(193, 122, 74, 0.3),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  const Icon(Icons.photo_camera_outlined, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Open camera',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: GestureDetector(
-            onTap: onManualAdd,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color.fromRGBO(193, 122, 74, 0.06),
-                border: Border.all(
-                  color: kCookingTerracotta,
-                  width: 1.5,
-                  strokeAlign: BorderSide.strokeAlignCenter,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  const Icon(Icons.add_circle_outline, color: kCookingTerracotta, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Add scrap',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: kCookingTerracotta,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
+    return AppButton(
+      text: 'Open camera',
+      onPressed: onScan,
+      gradient: LinearGradient(
+        colors: [
+          Theme.of(context).colorScheme.primary,
+          Theme.of(context).colorScheme.secondary,
+        ],
+      ),
     );
   }
 }
@@ -517,12 +425,14 @@ class _InventoryTabState extends State<_InventoryTab> {
 
   void _findRecipesForSelected() {
     if (_selectedItems.isNotEmpty) {
+      SoundService.playClick();
       widget.onOpenRecipes(_selectedItems.toList());
     }
   }
 
   void _findRecipesForAll() {
     if (widget.items.isNotEmpty) {
+      SoundService.playClick();
       final labels = widget.items.map((item) => item.label).toList();
       widget.onOpenRecipes(labels);
     }
@@ -533,7 +443,7 @@ class _InventoryTabState extends State<_InventoryTab> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
           child: Row(
             children: [
               Expanded(
@@ -576,18 +486,16 @@ class _InventoryTabState extends State<_InventoryTab> {
                     style: TextStyle(color: kCookingTerracotta, fontWeight: FontWeight.w600),
                   ),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
+                const SizedBox(width: 12),
+                AppButton(
+                  text: 'Find Recipes',
                   onPressed: _findRecipesForAll,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kCookingTerracotta,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
+                    ],
                   ),
-                  child: const Text('Find Recipes'),
                 ),
               ],
             ],
@@ -616,17 +524,15 @@ class _InventoryTabState extends State<_InventoryTab> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton(
+                AppButton(
+                  text: 'Find Recipes',
                   onPressed: _findRecipesForSelected,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kCookingTerracotta,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
+                    ],
                   ),
-                  child: const Text('Find Recipes'),
                 ),
               ],
             ),
@@ -665,52 +571,6 @@ class _InventoryTabState extends State<_InventoryTab> {
   }
 }
 
-class _RecipeTab extends StatelessWidget {
-  const _RecipeTab({required this.recipes, required this.batchLabels, required this.appState});
-
-  final List<RecipeSuggestion> recipes;
-  final List<String> batchLabels;
-  final AppState appState;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      children: <Widget>[
-        _SectionCard(
-          title: 'Recipe ideas',
-          subtitle: batchLabels.isEmpty
-              ? 'Simple matches based on what is in the bin.'
-              : 'Based on your latest batch: ${batchLabels.join(', ')}',
-          child: recipes.isEmpty
-              ? const Text('Log a scrap to unlock recipe ideas.')
-              : Column(
-                  children: recipes
-                      .map(
-                        (recipe) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => RecipeDetailScreen(
-                                    recipe: recipe,
-                                    appState: appState,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: _RecipeTile(recipe: recipe),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-        ),
-      ],
-    );
-  }
-}
 
 class _StepRow extends StatelessWidget {
   const _StepRow({required this.number, required this.text});
@@ -731,7 +591,7 @@ class _StepRow extends StatelessWidget {
             color: const Color.fromRGBO(139, 115, 85, 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(number, style: const TextStyle(fontWeight: FontWeight.w700, color: kDarkGreen)),
+          child: Text(number, style: const TextStyle(fontWeight: FontWeight.w700, color: kSketchCharcoal)),
         ),
         const SizedBox(width: 10),
         Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
@@ -749,23 +609,8 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: const Color.fromRGBO(107, 93, 79, 0.12),
-          width: 1,
-        ),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.05),
-            blurRadius: 6,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
+    return AppCard(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -776,7 +621,7 @@ class _MetricCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             value,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -866,22 +711,11 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: const Color.fromRGBO(107, 93, 79, 0.15),
-          width: 1.5,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.06),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+    return AppCard(
+      padding: const EdgeInsets.all(24),
+      border: Border.all(
+        color: const Color.fromRGBO(107, 93, 79, 0.15),
+        width: 1.5,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -926,22 +760,11 @@ class _LatestScanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = outcome.requiresReview ? kCookingTerracotta : kHerbSage;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: statusColor.withAlpha(18),
-        border: Border.all(
-          color: statusColor.withAlpha(64),
-          width: 1.5,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: statusColor.withAlpha(25),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return AppCard(
+      padding: const EdgeInsets.all(24),
+      border: Border.all(
+        color: statusColor.withAlpha(64),
+        width: 1.5,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1109,7 +932,7 @@ class _RecipeTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color.fromRGBO(212, 229, 208, 0.25),
+        color: Theme.of(context).cardColor,
         border: Border.all(
           color: const Color.fromRGBO(139, 115, 85, 0.2),
           width: 1.5,
@@ -1278,22 +1101,11 @@ class _ImpactLedger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: kHerbSage,
-          width: 2,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color.fromRGBO(212, 229, 208, 0.12),
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
+    return AppCard(
+      padding: const EdgeInsets.all(24),
+      border: Border.all(
+        color: kHerbSage,
+        width: 2,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1369,90 +1181,6 @@ class _ImpactRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-
-class _ManualAddSheet extends StatefulWidget {
-  const _ManualAddSheet({required this.labels});
-
-  final List<String> labels;
-
-  @override
-  State<_ManualAddSheet> createState() => _ManualAddSheetState();
-}
-
-class _ManualAddSheetState extends State<_ManualAddSheet> {
-  String? selectedLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.all(12),
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'Add manually',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Choose a scrap type if you do not want to use the camera.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 220,
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 3.4,
-                ),
-                itemCount: widget.labels.length,
-                itemBuilder: (context, index) {
-                  final label = widget.labels[index];
-                  return Align(
-                    alignment: Alignment.centerLeft,
-                    child: ChoiceChip(
-                      label: Text(label),
-                      selected: selectedLabel == label,
-                      onSelected: (_) => setState(() => selectedLabel = label),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: selectedLabel == null
-                    ? null
-                    : () {
-                        Navigator.of(context).pop(selectedLabel);
-                      },
-                child: const Text('Add to scrap bin'),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

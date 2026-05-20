@@ -85,15 +85,136 @@ class RecipeService {
   }
 
   /// Suggest recipes given an explicit set of labels (useful for batch previews).
-  List<RecipeSuggestion> suggestForLabels(Iterable<String> labelsIterable) {
-    return _buildSuggestions(labelsIterable.toList());
+  Future<List<RecipeSuggestion>> suggestForLabels(Iterable<String> labelsIterable) async {
+    final labels = labelsIterable.toList();
+    final normalized = _normalizeLabels(labels);
+
+    // Try to get recipes from MealDB for each ingredient
+    final mealDBRecipes = <RecipeSuggestion>[];
+    final matchedIngredients = <String, String>{}; // recipeId -> ingredient
+    
+    for (final label in normalized) {
+      // Map scrap labels to common ingredients for MealDB
+      final ingredient = _mapToMealDBIngredient(label);
+      if (ingredient != null) {
+        final recipes = await _mealDBService.searchByIngredient(ingredient);
+        for (final meal in recipes) {
+          // Filter recipes to ensure they actually contain the ingredient
+          if (_recipeContainsIngredient(meal, ingredient)) {
+            final suggestion = _mealDBToSuggestion(meal, ingredient);
+            mealDBRecipes.add(suggestion);
+            matchedIngredients[meal.id] = ingredient;
+          }
+        }
+      }
+    }
+
+    // If MealDB returned recipes, use them
+    if (mealDBRecipes.isNotEmpty) {
+      // Remove duplicates and limit to top 5
+      final uniqueRecipes = <String, RecipeSuggestion>{};
+      for (final recipe in mealDBRecipes) {
+        if (recipe.id != null && !uniqueRecipes.containsKey(recipe.id)) {
+          uniqueRecipes[recipe.id!] = recipe;
+        }
+      }
+      
+      // If we got some recipes but they seem unrelated, fallback to static
+      if (uniqueRecipes.values.length < 2) {
+        return _buildSuggestions(labels);
+      }
+      
+      return uniqueRecipes.values.take(5).toList();
+    }
+
+    // Fallback to static recipes
+    return _buildSuggestions(labels);
+  }
+
+  /// Map scrap labels to MealDB-compatible ingredient names
+  String? _mapToMealDBIngredient(String label) {
+    final mapping = {
+      'banana_peel': 'banana',
+      'banana': 'banana',
+      'citrus_peel': 'lemon',
+      'citrus': 'lemon',
+      'orange': 'orange',
+      'lemon': 'lemon',
+      'lime': 'lime',
+      'apple_core_peel': 'apple',
+      'apple': 'apple',
+      'broccoli_stem': 'broccoli',
+      'broccoli': 'broccoli',
+      'cabbage_core': 'cabbage',
+      'cabbage': 'cabbage',
+      'cauliflower_core': 'cauliflower',
+      'cauliflower': 'cauliflower',
+      'carrot_peel': 'carrot',
+      'carrot': 'carrot',
+      'cucumber_peel': 'cucumber',
+      'cucumber': 'cucumber',
+      'onion_skin': 'onion',
+      'onion': 'onion',
+      'potato_peel': 'potato',
+      'potato': 'potato',
+      'tomato_trimmings': 'tomato',
+      'tomato': 'tomato',
+      'tomato peel': 'tomato',
+      'tomato peels': 'tomato',
+      'leafy_trimmings': 'spinach',
+      'spinach': 'spinach',
+      'lettuce': 'lettuce',
+      'bean_pod': 'green beans',
+      'beans': 'green beans',
+      'corn_husk': 'corn',
+      'corn': 'corn',
+      'eggshells': 'egg',
+      'egg': 'egg',
+      'coffee': 'coffee',
+      'coffee grounds': 'coffee',
+    };
+
+    final lowerLabel = label.toLowerCase().trim();
+    
+    // Try exact match first
+    if (mapping.containsKey(lowerLabel)) {
+      return mapping[lowerLabel];
+    }
+
+    // Try partial match for compound labels
+    for (final entry in mapping.entries) {
+      if (lowerLabel.contains(entry.key) || entry.key.contains(lowerLabel)) {
+        return entry.value;
+      }
+    }
+
+    // Try direct mapping if label is a common ingredient
+    if (lowerLabel.contains('chicken')) return 'chicken';
+    if (lowerLabel.contains('beef')) return 'beef';
+    if (lowerLabel.contains('pork')) return 'pork';
+    if (lowerLabel.contains('rice')) return 'rice';
+    if (lowerLabel.contains('pasta')) return 'pasta';
+
+    return null;
+  }
+
+  /// Check if a recipe actually contains the specified ingredient
+  bool _recipeContainsIngredient(MealDBRecipe meal, String ingredient) {
+    final lowerIngredient = ingredient.toLowerCase();
+    for (final ing in meal.ingredients) {
+      if (ing.name.toLowerCase().contains(lowerIngredient) || 
+          lowerIngredient.contains(ing.name.toLowerCase())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Search MealDB for recipes based on ingredient
   Future<List<RecipeSuggestion>> searchMealDB(String ingredient) async {
     try {
       final recipes = await _mealDBService.searchByIngredient(ingredient);
-      return recipes.map((meal) => _mealDBToSuggestion(meal)).toList();
+      return recipes.map((meal) => _mealDBToSuggestion(meal, ingredient)).toList();
     } catch (e) {
       print('Failed to search MealDB: $e');
       return [];
@@ -141,13 +262,13 @@ class RecipeService {
     );
   }
 
-  RecipeSuggestion _mealDBToSuggestion(MealDBRecipe meal) {
+  RecipeSuggestion _mealDBToSuggestion(MealDBRecipe meal, String matchedIngredient) {
     return RecipeSuggestion(
       id: meal.id,
       title: meal.name,
       summary: '${meal.category} • ${meal.area}',
       ingredients: meal.ingredients.map((ing) => '${ing.name} (${ing.measure})').toList(),
-      matchReason: 'From MealDB database',
+      matchReason: 'Contains $matchedIngredient',
       chefNote: meal.instructions,
     );
   }

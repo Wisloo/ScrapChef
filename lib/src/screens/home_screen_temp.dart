@@ -4,8 +4,6 @@ import 'package:flutter/services.dart';
 import '../models.dart';
 import '../state/app_state.dart';
 import '../widgets/page_transitions.dart';
-import '../widgets/veggie_mascots.dart'
-  hide kPrimary, kPrimaryLight, kSecondary, kAccent, kBackground, kSurface, kText, kTextLight, kDivider, kDarkBackground, kDarkSurface, kDarkText, kDarkTextLight, kDarkDivider;
 import 'manual_verify_screen.dart';
 import 'recipe_detail_screen.dart';
 import 'scan_screen.dart';
@@ -89,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
 
     if (label != null && label.isNotEmpty) {
-      widget.appState.addManualItem(label);
+      widget.appState.simulateScan(label);
     }
   }
 
@@ -100,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen>
         builder: (_) => SettingsScreen(
           appState: widget.appState,
           onThemeChanged: widget.onThemeChanged,
+          isDarkMode: Theme.of(context).brightness == Brightness.dark,
         ),
       ),
     );
@@ -196,6 +195,7 @@ class _HomeScreenState extends State<HomeScreen>
                         builder: (_) => SettingsScreen(
                           appState: widget.appState,
                           onThemeChanged: widget.onThemeChanged,
+                          isDarkMode: Theme.of(context).brightness == Brightness.dark,
                         ),
                       ),
                     );
@@ -1455,7 +1455,7 @@ class _HelpStep extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: textColor,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),

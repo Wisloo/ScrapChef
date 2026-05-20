@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
 import '../models.dart';
 
@@ -30,13 +31,16 @@ class FirebaseRecipeStore {
           .doc(userId)
           .collection(_recipesSubcollection)
           .orderBy('savedAt', descending: true)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 8));
 
       return snapshot.docs
           .map((doc) => SavedRecipeRecord.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      throw Exception('Failed to load recipes: $e');
+      print('Failed to load recipes: $e');
+      // Return empty list instead of throwing to prevent app from getting stuck
+      return <SavedRecipeRecord>[];
     }
   }
 

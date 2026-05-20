@@ -23,6 +23,7 @@ class ScrapChefApp extends StatefulWidget {
 class _ScrapChefAppState extends State<ScrapChefApp> {
   late final AppState appState;
   bool isDarkMode = false;
+  bool _preferencesLoaded = false;
 
   @override
   void initState() {
@@ -30,7 +31,7 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
     _loadPreferences();
     appState = AppState(
       classifierService: GeminiService(
-        apiKey: const String.fromEnvironment('GEMINI_API_KEY'),
+        apiKey: 'AIzaSyDagI2DoJllJumvfV2pZWYuJNwoFrw381A',
       ),
       recipeService: RecipeService(),
     );
@@ -41,6 +42,7 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
     await SoundService.init();
     setState(() {
       isDarkMode = PreferencesService.isDarkMode;
+      _preferencesLoaded = true;
     });
   }
 
@@ -52,35 +54,50 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: appState,
-      builder: (context, _) {
-        final Widget startScreen;
-        if (!appState.isReady) {
-          startScreen = const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        } else if (appState.isSignedIn) {
-          startScreen = HomeScreen(
-            appState: appState,
-            onThemeChanged: (value) async {
-              setState(() => isDarkMode = value);
-              await PreferencesService.setDarkMode(value);
-            },
-          );
-        } else {
-          startScreen = LoginScreen(appState: appState);
-        }
+    if (!_preferencesLoaded) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
 
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'ScrapChef',
-          theme: buildLightTheme(),
-          darkTheme: buildDarkTheme(),
-          themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-          home: startScreen,
-        );
-      },
+    final Widget startScreen;
+    if (!appState.isReady) {
+      startScreen = const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    } else if (appState.isSignedIn) {
+      startScreen = HomeScreen(
+        appState: appState,
+        isDarkMode: isDarkMode,
+        onThemeChanged: (value) async {
+          setState(() => isDarkMode = value);
+          await PreferencesService.setDarkMode(value);
+        },
+      );
+    } else if (appState.authFailed) {
+      // If auth failed, show home screen in guest mode
+      startScreen = HomeScreen(
+        appState: appState,
+        isDarkMode: isDarkMode,
+        onThemeChanged: (value) async {
+          setState(() => isDarkMode = value);
+          await PreferencesService.setDarkMode(value);
+        },
+      );
+    } else {
+      startScreen = LoginScreen(appState: appState);
+    }
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'ScrapChef',
+      theme: buildLightTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      home: startScreen,
     );
   }
 }

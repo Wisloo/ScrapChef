@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
 import '../models.dart';
 
@@ -32,7 +33,8 @@ class FirebaseScrapStore {
           .doc(userId)
           .collection(_scrapsSubcollection)
           .orderBy('loggedAt', descending: true)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 8));
 
       print('Loaded ${snapshot.docs.length} scraps');
       return snapshot.docs
@@ -40,7 +42,8 @@ class FirebaseScrapStore {
           .toList();
     } catch (e) {
       print('Failed to load scraps: $e');
-      throw Exception('Failed to load scraps: $e');
+      // Return empty list instead of throwing to prevent app from getting stuck
+      return <ScrapItem>[];
     }
   }
 
