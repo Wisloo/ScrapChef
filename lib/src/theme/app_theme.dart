@@ -2,24 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // Vibrant earthy colors from backup
-const Color kPrimary = Color(0xFF8B7355);    // Warm Brown
-const Color kPrimaryLight = Color(0xFFA89070); // Light Warm Brown
-const Color kSecondary = Color(0xFFC17A4A);  // Terracotta Orange
-const Color kAccent = Color(0xFF6B5D4F);     // Charcoal
-const Color kBackground = Color(0xFFFAF8F5); // Paper Cream
+const Color kPrimary = Color(0xFF5D4037);    // Modern Warm Brown
+const Color kPrimaryLight = Color(0xFF8A6B55); // Modern Light Warm Brown
+const Color kSecondary = Color(0xFFD9643E);  // Modern Terracotta Orange
+const Color kAccent = Color(0xFF5A3D31);     // Dark Charcoal
+const Color kBackground = Color(0xFFFBF8F0); // Soft Off-White
 const Color kSurface = Color(0xFFFFFFFF);    // White
-const Color kText = Color(0xFF3C3C3C);       // Ink Dark
-const Color kTextLight = Color(0xFF9A8B7E);  // Caption Gray
-const Color kDivider = Color(0xFFE0D5C5);    // Light Beige
-const Color kMuted = Color(0xFF7A6958);      // Muted
-const Color kSuccess = Color(0xFFD4E5D0);     // Herb Sage
+const Color kText = Color(0xFF2E2E2E);       // Near Black
+const Color kTextLight = Color(0xFF8C7B6B);  // Muted Gray
+const Color kDivider = Color(0xFFE2D7C5);    // Light Beige
+const Color kMuted = Color(0xFF9A8B7E);      // Muted
+const Color kSuccess = Color(0xFFA8D5BA);     // Light Green
 // Additional colors for improved UI
 const Color kError = Color(0xFFE57373); // Soft Red for errors
-const Color kErrorDark = Color(0xFFC75B5B);
+const Color kErrorDark = Color(0xFFB71C1C);
 const Color kAccentDark = Color(0xFF8A7A6C); // Dark mode accent variant
 const Color kSecondaryLight = Color(0xFFD99A6F); // Dark mode secondary variant
-const Color kDarkSuccess = Color(0xFF3A4B3A); // Dark mode success variant
-// (duplicate block removed)
+const Color kDarkSuccess = Color(0xFF2E7D32); // Dark mode success variant
 
 const Color kDarkBackground = Color(0xFF1E1A16);
 const Color kDarkSurface = Color(0xFF2C251F);

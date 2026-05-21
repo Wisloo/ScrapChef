@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/app_card.dart';
-import '../widgets/app_button.dart';
-
 import '../models.dart';
 import '../state/app_state.dart';
 import '../services/sound_service.dart';
@@ -9,17 +6,9 @@ import 'manual_verify_screen.dart';
 import 'scan_screen.dart';
 import 'settings_screen.dart';
 import 'recipe_list_screen.dart';
+import '../theme/app_theme.dart';
 
-// Food-inspired warm palette
-const Color kRecipeWarmBrown = Color(0xFF8B7355);    // Primary
-const Color kCookingTerracotta = Color(0xFFC17A4A);  // Secondary
-const Color kSketchCharcoal = Color(0xFF6B5D4F);     // Accent
-const Color kPaperCream = Color(0xFFFAF8F5);         // Background
-const Color kHerbSage = Color(0xFFD4E5D0);           // Success
-const Color kCaptionGray = Color(0xFF9A8B7E);        // Muted text
-const Color kInkDark = Color(0xFF3C3C3C);            // Very dark
-
-// Legacy names removed – use theme colors directly
+// Modern color palette - using theme colors directly
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.appState, required this.onThemeChanged, required this.isDarkMode});
@@ -32,19 +21,32 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _heroAnimationController;
+  late Animation<double> _heroAnimation;
 
   @override
   void initState() {
     super.initState();
     widget.appState.addListener(_onAppStateChanged);
+    
+    _heroAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _heroAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _heroAnimationController, curve: Curves.easeOut),
+    );
+    _heroAnimationController.forward();
   }
 
   @override
   void dispose() {
     widget.appState.removeListener(_onAppStateChanged);
+    _heroAnimationController.dispose();
     super.dispose();
   }
+
 
   void _onAppStateChanged() {
     if (mounted) {
@@ -131,10 +133,13 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                child: _HeroHeader(
-                  itemsLogged: itemsLogged,
-                  estimatedSavings: estimatedSavings,
-                  onSettingsTap: _openSettings,
+                child: FadeTransition(
+                  opacity: _heroAnimation,
+                  child: _HeroHeader(
+                    itemsLogged: itemsLogged,
+                    estimatedSavings: estimatedSavings,
+                    onSettingsTap: _openSettings,
+                  ),
                 ),
               ),
             ),
@@ -191,119 +196,111 @@ class _HeroHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(24),
-      border: Border.all(
-        color: kSketchCharcoal,
-        width: 1.5,
-        strokeAlign: BorderSide.strokeAlignOutside,
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'ScrapChef',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: kRecipeWarmBrown,
-                            fontWeight: FontWeight.w800,
-                          ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Turn scraps into suppers',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: kCaptionGray,
-                            fontStyle: FontStyle.italic,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color.fromRGBO(193, 122, 74, 0.12),
-                      border: Border.all(
-                        color: kCookingTerracotta,
-                        width: 1.2,
+      color: Theme.of(context).cardColor,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        'ScrapChef',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w800,
+                            ),
                       ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '$itemsLogged',
-                      style: const TextStyle(
-                        color: kCookingTerracotta,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
+                      const SizedBox(height: 2),
+                      Text(
+                        'Turn scraps into suppers',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                              fontStyle: FontStyle.italic,
+                            ),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: onSettingsTap,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color.fromRGBO(107, 93, 79, 0.08),
+                        color: Theme.of(context).colorScheme.primary.withAlpha(30),
                         border: Border.all(
-                          color: kSketchCharcoal,
-                          width: 1,
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1.2,
                         ),
                         borderRadius: BorderRadius.circular(10),
                       ),
+                      child: Text(
+                        '$itemsLogged',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: onSettingsTap,
                       child: Icon(
                         Icons.settings_outlined,
-                        color: kSketchCharcoal,
+                        color: Theme.of(context).colorScheme.onSurface,
                         size: 20,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            height: 1,
-            color: const Color.fromRGBO(107, 93, 79, 0.15),
-            margin: const EdgeInsets.symmetric(vertical: 4),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      '✓ $itemsLogged scraps scanned',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: kSketchCharcoal,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '✓ Estimated ₱${estimatedSavings.toStringAsFixed(0)} saved',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: kSketchCharcoal,
-                          ),
-                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: 16),
+            Divider(
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
+              thickness: 1,
+              indent: 4,
+              endIndent: 4,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        '✓ $itemsLogged scraps scanned',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '✓ Estimated ₱${estimatedSavings.toStringAsFixed(0)} saved',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -316,14 +313,21 @@ class _ActionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppButton(
-      text: 'Open camera',
+    return FilledButton(
       onPressed: onScan,
-      gradient: LinearGradient(
-        colors: [
-          Theme.of(context).colorScheme.primary,
-          Theme.of(context).colorScheme.secondary,
-        ],
+      style: FilledButton.styleFrom(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      child: Text(
+        'Open camera',
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }
@@ -487,14 +491,21 @@ class _InventoryTabState extends State<_InventoryTab> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                AppButton(
-                  text: 'Find Recipes',
+                FilledButton(
                   onPressed: _findRecipesForAll,
-                  gradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.secondary,
-                    ],
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    'Find Recipes',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
                 ),
               ],
@@ -524,14 +535,21 @@ class _InventoryTabState extends State<_InventoryTab> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                AppButton(
-                  text: 'Find Recipes',
+                FilledButton(
                   onPressed: _findRecipesForSelected,
-                  gradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.secondary,
-                    ],
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    'Find Recipes',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
                 ),
               ],
@@ -609,36 +627,42 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: kCaptionGray,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: kRecipeWarmBrown,
-                  letterSpacing: -0.3,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            hint,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: kCaptionGray,
-              fontSize: 11,
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: kCaptionGray,
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: kRecipeWarmBrown,
+                    letterSpacing: -0.3,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              hint,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: kCaptionGray,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -711,34 +735,36 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(24),
-      border: Border.all(
-        color: const Color.fromRGBO(107, 93, 79, 0.15),
-        width: 1.5,
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: kRecipeWarmBrown,
-                  letterSpacing: -0.3,
-                ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: kCaptionGray,
-                  fontStyle: FontStyle.italic,
-                ),
-          ),
-          const SizedBox(height: 18),
-          child,
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: kRecipeWarmBrown,
+                    letterSpacing: -0.3,
+                  ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: kCaptionGray,
+                    fontStyle: FontStyle.italic,
+                  ),
+            ),
+            const SizedBox(height: 18),
+            child,
+          ],
+        ),
       ),
     );
   }
@@ -760,82 +786,85 @@ class _LatestScanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = outcome.requiresReview ? kCookingTerracotta : kHerbSage;
 
-    return AppCard(
-      padding: const EdgeInsets.all(24),
-      border: Border.all(
-        color: statusColor.withAlpha(64),
-        width: 1.5,
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Text(
-                'Latest scan',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: kRecipeWarmBrown,
+      color: Theme.of(context).cardColor,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  'Latest scan',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: kRecipeWarmBrown,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    outcome.requiresReview ? 'Review' : 'Saved',
+                    style: const TextStyle(
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
-              ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              outcome.predictedLabel,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: kRecipeWarmBrown,
+                    letterSpacing: -0.3,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            _SketchConfidenceMeter(confidence: outcome.confidence),
+            const SizedBox(height: 12),
+            Text(
+              _getEncouragementMessage(outcome.requiresReview),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: kSketchCharcoal,
+                    fontStyle: FontStyle.italic,
+                  ),
+            ),
+            if (outcome.note != null) ...<Widget>[
+              const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: statusColor,
+                  color: Theme.of(context).colorScheme.surface.withAlpha(50),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
+                    width: 1,
+                  ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  outcome.requiresReview ? 'Review' : 'Saved',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+                  outcome.note!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: kSketchCharcoal,
+                      ),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            outcome.predictedLabel,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: kRecipeWarmBrown,
-                  letterSpacing: -0.3,
-                ),
-          ),
-          const SizedBox(height: 12),
-          _SketchConfidenceMeter(confidence: outcome.confidence),
-          const SizedBox(height: 12),
-          Text(
-            _getEncouragementMessage(outcome.requiresReview),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: kSketchCharcoal,
-                  fontStyle: FontStyle.italic,
-                ),
-          ),
-          if (outcome.note != null) ...<Widget>[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color.fromRGBO(255, 255, 255, 0.5),
-                border: Border.all(
-                  color: const Color.fromRGBO(107, 93, 79, 0.1),
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                outcome.note!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: kSketchCharcoal,
-                    ),
-              ),
-            ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -1101,51 +1130,53 @@ class _ImpactLedger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(24),
-      border: Border.all(
-        color: kHerbSage,
-        width: 2,
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color.fromRGBO(212, 229, 208, 0.4),
-                  borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: kSuccess.withAlpha(100),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.eco, size: 18, color: kSuccess),
                 ),
-                child: const Icon(Icons.eco, size: 18, color: kHerbSage),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Your impact so far',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: kRecipeWarmBrown,
-                      letterSpacing: -0.3,
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _ImpactRow(icon: Icons.check_circle, label: '$itemsLogged scraps scanned', color: kHerbSage),
-          const SizedBox(height: 12),
-          _ImpactRow(
-            icon: Icons.restaurant_menu,
-            label: '${itemsLogged > 0 ? (itemsLogged * 2) : 0} recipe ideas discovered',
-            color: kCookingTerracotta,
-          ),
-          const SizedBox(height: 12),
-          const _ImpactRow(
-            icon: Icons.savings,
-            label: 'Help reducing food waste',
-            color: kHerbSage,
-          ),
-        ],
+                const SizedBox(width: 12),
+                Text(
+                  'Your impact so far',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.primary,
+                        letterSpacing: -0.3,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _ImpactRow(icon: Icons.check_circle, label: '$itemsLogged scraps scanned', color: kSuccess),
+            const SizedBox(height: 12),
+            _ImpactRow(
+              icon: Icons.restaurant_menu,
+              label: '${itemsLogged > 0 ? (itemsLogged * 2) : 0} recipe ideas discovered',
+              color: Theme.of(context).colorScheme.secondary,
+            ),
+            const SizedBox(height: 12),
+            const _ImpactRow(
+              icon: Icons.savings,
+              label: 'Help reducing food waste',
+              color: kSuccess,
+            ),
+          ],
+        ),
       ),
     );
   }
