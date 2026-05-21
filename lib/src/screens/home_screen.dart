@@ -7,8 +7,11 @@ import 'scan_screen.dart';
 import 'settings_screen.dart';
 import 'recipe_list_screen.dart';
 import '../theme/app_theme.dart';
-
-// Modern color palette - using theme colors directly
+import '../widgets/animated_button.dart' as animated;
+import '../widgets/app_card.dart';
+import '../widgets/app_button.dart';
+import '../constants/ui_constants.dart';
+// import '../widgets/veggie_mascots.dart' as veggie; // Removed unused import
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.appState, required this.onThemeChanged, required this.isDarkMode});
@@ -47,7 +50,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
-
   void _onAppStateChanged() {
     if (mounted) {
       setState(() {});
@@ -55,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _onBatchSelect(List<String> selectedLabels) {
-    // Navigate to recipes screen instead of switching tabs
     _openRecipes(selectedLabels);
   }
 
@@ -175,8 +176,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             SliverFillRemaining(
               child: TabBarView(
                 children: <Widget>[
-                  _ScanTab(outcome: outcome, itemsLogged: itemsLogged),
-                  _InventoryTab(items: inventory, onBatchSelect: _onBatchSelect, appState: widget.appState, onOpenRecipes: _openRecipes),
+                  AppCard(
+                    padding: const EdgeInsets.all(UIConstants.kVerticalGap),
+                    child: _ScanTab(outcome: outcome, itemsLogged: itemsLogged),
+                  ),
+                  const SizedBox(height: UIConstants.kVerticalGap),
+                  const Divider(
+                    thickness: 1,
+                    height: 1,
+                  ),
+                  const SizedBox(height: UIConstants.kVerticalGap),
+                  AppCard(
+                    padding: const EdgeInsets.all(UIConstants.kVerticalGap),
+                    child: _InventoryTab(items: inventory, onBatchSelect: _onBatchSelect, appState: widget.appState, onOpenRecipes: _openRecipes),
+                  ),
                 ],
               ),
             ),
@@ -196,111 +209,140 @@ class _HeroHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primary.withOpacity(0.15),
+            Theme.of(context).colorScheme.primary.withOpacity(0.05),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            blurRadius: 20,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
-      color: Theme.of(context).cardColor,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'ScrapChef',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w800,
-                            ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Turn scraps into suppers',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
-                              fontStyle: FontStyle.italic,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withAlpha(30),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 1.2,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$itemsLogged',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                        ),
-                      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'ScrapChef',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
                     ),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: onSettingsTap,
-                      child: Icon(
-                        Icons.settings_outlined,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        size: 20,
-                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Turn scraps into suppers',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
+                            fontStyle: FontStyle.italic,
+                            fontSize: 14,
+                          ),
                     ),
                   ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Divider(
-              color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
-              thickness: 1,
-              indent: 4,
-              endIndent: 4,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        '✓ $itemsLogged scraps scanned',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      '$itemsLogged',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '✓ Estimated ₱${estimatedSavings.toStringAsFixed(0)} saved',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                      ),
-                    ],
+                    ),
                   ),
+                  const SizedBox(width: 12),
+                  animated.AnimatedIconButton(
+                    onPressed: onSettingsTap,
+                    icon: Icons.settings_outlined,
+                    backgroundColor: Theme.of(context).cardColor,
+                    iconColor: Theme.of(context).colorScheme.onSurface,
+                    size: 48,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Divider(
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
+            thickness: 1,
+            indent: 0,
+            endIndent: 0,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: [
+                        Icon(Icons.check_circle, size: 16, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$itemsLogged scraps scanned',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.attach_money, size: 16, color: Theme.of(context).colorScheme.secondary),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Estimated ₱${estimatedSavings.toStringAsFixed(0)} saved',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -313,21 +355,29 @@ class _ActionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: onScan,
-      style: FilledButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-      ),
-      child: Text(
-        'Open camera',
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: animated.AnimatedButton(
+        onPressed: onScan,
+        color: Theme.of(context).colorScheme.primary,
+        borderRadius: 16,
+        height: 56,
+        shadow: true,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.camera_alt_rounded, size: 24, color: Colors.white),
+            SizedBox(width: 12),
+            Text(
+              'Open camera',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
             ),
+          ],
+        ),
       ),
     );
   }
@@ -454,7 +504,7 @@ class _InventoryTabState extends State<_InventoryTab> {
                 child: Text(
                   widget.items.isEmpty ? 'Scrap bin is empty' : '${widget.items.length} items',
                   style: TextStyle(
-                    color: kSketchCharcoal,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                   ),
@@ -487,25 +537,23 @@ class _InventoryTabState extends State<_InventoryTab> {
                   },
                   child: Text(
                     'Clear All',
-                    style: TextStyle(color: kCookingTerracotta, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
                   ),
                 ),
                 const SizedBox(width: 12),
-                FilledButton(
+                animated.AnimatedButton(
                   onPressed: _findRecipesForAll,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: 16,
+                  height: 56,
+                  shadow: true,
                   child: Text(
                     'Find Recipes',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
               ],
@@ -521,7 +569,7 @@ class _InventoryTabState extends State<_InventoryTab> {
                   child: Text(
                     '${_selectedItems.length} item${_selectedItems.length == 1 ? '' : 's'} selected',
                     style: TextStyle(
-                      color: kCookingTerracotta,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                     ),
@@ -531,25 +579,23 @@ class _InventoryTabState extends State<_InventoryTab> {
                   onPressed: _clearSelection,
                   child: Text(
                     'Clear Selection',
-                    style: TextStyle(color: kCaptionGray),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
                   ),
                 ),
                 const SizedBox(width: 8),
-                FilledButton(
+                animated.AnimatedButton(
                   onPressed: _findRecipesForSelected,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: 16,
+                  height: 56,
+                  shadow: true,
                   child: Text(
                     'Find Recipes',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
               ],
@@ -606,10 +652,13 @@ class _StepRow extends StatelessWidget {
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: const Color.fromRGBO(139, 115, 85, 0.12),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(number, style: const TextStyle(fontWeight: FontWeight.w700, color: kSketchCharcoal)),
+          child: Text(number, style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.primary,
+              )),
         ),
         const SizedBox(width: 10),
         Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
@@ -640,7 +689,7 @@ class _MetricCard extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: kCaptionGray,
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
                     fontWeight: FontWeight.w600,
                   ),
             ),
@@ -649,7 +698,7 @@ class _MetricCard extends StatelessWidget {
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: kRecipeWarmBrown,
+                    color: Theme.of(context).colorScheme.primary,
                     letterSpacing: -0.3,
                   ),
             ),
@@ -657,7 +706,7 @@ class _MetricCard extends StatelessWidget {
             Text(
               hint,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: kCaptionGray,
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
                 fontSize: 11,
               ),
             ),
@@ -688,14 +737,14 @@ class _SketchConfidenceMeter extends StatelessWidget {
             Text(
               'Confidence',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: kSketchCharcoal,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
                   ),
             ),
             Text(
               '$percentage%',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: kCookingTerracotta,
+                    color: Theme.of(context).colorScheme.secondary,
                     fontWeight: FontWeight.w700,
                   ),
             ),
@@ -710,10 +759,10 @@ class _SketchConfidenceMeter extends StatelessWidget {
                 height: 6,
                 margin: const EdgeInsets.symmetric(horizontal: 1.5),
                 decoration: BoxDecoration(
-                  color: index < filledSegments ? kCookingTerracotta : const Color.fromRGBO(154, 139, 126, 0.2),
+                  color: index < filledSegments ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.onSurface.withAlpha(10),
                   borderRadius: BorderRadius.circular(2),
                   border: Border.all(
-                    color: const Color.fromRGBO(107, 93, 79, 0.1),
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
                     width: 0.5,
                   ),
                 ),
@@ -749,7 +798,7 @@ class _SectionCard extends StatelessWidget {
               title,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: kRecipeWarmBrown,
+                    color: Theme.of(context).colorScheme.primary,
                     letterSpacing: -0.3,
                   ),
             ),
@@ -757,7 +806,7 @@ class _SectionCard extends StatelessWidget {
             Text(
               subtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: kCaptionGray,
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
                     fontStyle: FontStyle.italic,
                   ),
             ),
@@ -784,7 +833,7 @@ class _LatestScanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = outcome.requiresReview ? kCookingTerracotta : kHerbSage;
+    final statusColor = outcome.requiresReview ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary;
 
     return Card(
       elevation: 3,
@@ -803,7 +852,7 @@ class _LatestScanCard extends StatelessWidget {
                 Text(
                   'Latest scan',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: kRecipeWarmBrown,
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -829,7 +878,7 @@ class _LatestScanCard extends StatelessWidget {
               outcome.predictedLabel,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: kRecipeWarmBrown,
+                    color: Theme.of(context).colorScheme.primary,
                     letterSpacing: -0.3,
                   ),
             ),
@@ -839,7 +888,7 @@ class _LatestScanCard extends StatelessWidget {
             Text(
               _getEncouragementMessage(outcome.requiresReview),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: kSketchCharcoal,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontStyle: FontStyle.italic,
                   ),
             ),
@@ -858,7 +907,7 @@ class _LatestScanCard extends StatelessWidget {
                 child: Text(
                   outcome.note!,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: kSketchCharcoal,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                 ),
               ),
@@ -884,9 +933,9 @@ class _InventoryTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected ? kCookingTerracotta.withAlpha(20) : Colors.white,
+          color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.1) : Colors.white,
           border: Border.all(
-            color: isSelected ? kCookingTerracotta : const Color.fromRGBO(107, 93, 79, 0.12),
+            color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withAlpha(10),
             width: isSelected ? 2 : 1.5,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -904,16 +953,16 @@ class _InventoryTile extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: isSelected ? kCookingTerracotta : kHerbSage,
+                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: const Color.fromRGBO(139, 115, 85, 0.2),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
                   width: 1,
                 ),
               ),
               child: Icon(
                 isSelected ? Icons.check_circle : Icons.local_florist_outlined,
-                color: isSelected ? Colors.white : kRecipeWarmBrown,
+                color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
                 size: 22,
               ),
             ),
@@ -926,14 +975,14 @@ class _InventoryTile extends StatelessWidget {
                     item.label,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: isSelected ? kCookingTerracotta : kRecipeWarmBrown,
+                          color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
                         ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${item.source} • ${(item.confidence * 100).toStringAsFixed(0)}%',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: kCaptionGray,
+                          color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
                         ),
                   ),
                 ],
@@ -941,7 +990,7 @@ class _InventoryTile extends StatelessWidget {
             ),
             Icon(
               item.manualCorrection ? Icons.edit : Icons.check_circle,
-              color: item.manualCorrection ? kCookingTerracotta : kHerbSage,
+              color: item.manualCorrection ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
               size: 20,
             ),
           ],
@@ -963,7 +1012,7 @@ class _RecipeTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         border: Border.all(
-          color: const Color.fromRGBO(139, 115, 85, 0.2),
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
           width: 1.5,
         ),
         borderRadius: BorderRadius.circular(14),
@@ -987,7 +1036,7 @@ class _RecipeTile extends StatelessWidget {
                   recipe.title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
-                        color: kRecipeWarmBrown,
+                        color: Theme.of(context).colorScheme.primary,
                         letterSpacing: -0.3,
                       ),
                 ),
@@ -996,10 +1045,10 @@ class _RecipeTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: const Color.fromRGBO(193, 122, 74, 0.15),
+                  color: Theme.of(context).colorScheme.secondary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.restaurant_menu, size: 18, color: kCookingTerracotta),
+                child: const Icon(Icons.restaurant_menu, size: 18, color: kSecondary),
               ),
             ],
           ),
@@ -1007,7 +1056,7 @@ class _RecipeTile extends StatelessWidget {
           Text(
             recipe.summary,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: kSketchCharcoal,
+                  color: Theme.of(context).colorScheme.onSurface,
                   height: 1.5,
                 ),
           ),
@@ -1022,7 +1071,7 @@ class _RecipeTile extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color.fromRGBO(255, 255, 255, 0.7),
                       border: Border.all(
-                        color: const Color.fromRGBO(139, 115, 85, 0.15),
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
                         width: 1,
                       ),
                       borderRadius: BorderRadius.circular(6),
@@ -1037,7 +1086,7 @@ class _RecipeTile extends StatelessWidget {
                     child: Text(
                       ingredient,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: kRecipeWarmBrown,
+                            color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.w500,
                           ),
                     ),
@@ -1051,7 +1100,7 @@ class _RecipeTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color.fromRGBO(255, 255, 255, 0.8),
               border: Border.all(
-                color: const Color.fromRGBO(193, 122, 74, 0.2),
+                color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
                 width: 1,
               ),
               borderRadius: BorderRadius.circular(8),
@@ -1062,7 +1111,7 @@ class _RecipeTile extends StatelessWidget {
                 Text(
                   'Why this recipe',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: kCookingTerracotta,
+                        color: Theme.of(context).colorScheme.secondary,
                         fontWeight: FontWeight.w600,
                       ),
                 ),
@@ -1070,7 +1119,7 @@ class _RecipeTile extends StatelessWidget {
                 Text(
                   recipe.matchReason,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: kSketchCharcoal,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                 ),
               ],
@@ -1081,9 +1130,9 @@ class _RecipeTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color.fromRGBO(193, 122, 74, 0.1),
+                color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
                 border: Border.all(
-                  color: const Color.fromRGBO(193, 122, 74, 0.25),
+                  color: Theme.of(context).colorScheme.secondary.withOpacity(0.25),
                   width: 1,
                 ),
                 borderRadius: BorderRadius.circular(10),
@@ -1093,12 +1142,12 @@ class _RecipeTile extends StatelessWidget {
                 children: <Widget>[
                   Row(
                     children: <Widget>[
-                      const Icon(Icons.note_outlined, size: 16, color: kCookingTerracotta),
+                      Icon(Icons.note_outlined, size: 16, color: Theme.of(context).colorScheme.secondary),
                       const SizedBox(width: 8),
                       Text(
                         'Chef note',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: kCookingTerracotta,
+                              color: Theme.of(context).colorScheme.secondary,
                               fontWeight: FontWeight.w700,
                             ),
                       ),
@@ -1108,7 +1157,7 @@ class _RecipeTile extends StatelessWidget {
                   Text(
                     recipe.chefNote!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: kSketchCharcoal,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontStyle: FontStyle.italic,
                           height: 1.4,
                         ),
@@ -1145,10 +1194,10 @@ class _ImpactLedger extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: kSuccess.withAlpha(100),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.eco, size: 18, color: kSuccess),
+                  child: Icon(Icons.eco, size: 18, color: Theme.of(context).colorScheme.primary),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -1162,7 +1211,7 @@ class _ImpactLedger extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            _ImpactRow(icon: Icons.check_circle, label: '$itemsLogged scraps scanned', color: kSuccess),
+            _ImpactRow(icon: Icons.check_circle, label: '$itemsLogged scraps scanned', color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 12),
             _ImpactRow(
               icon: Icons.restaurant_menu,
@@ -1170,10 +1219,10 @@ class _ImpactLedger extends StatelessWidget {
               color: Theme.of(context).colorScheme.secondary,
             ),
             const SizedBox(height: 12),
-            const _ImpactRow(
+            _ImpactRow(
               icon: Icons.savings,
               label: 'Help reducing food waste',
-              color: kSuccess,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ],
         ),
@@ -1206,7 +1255,7 @@ class _ImpactRow extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: kSketchCharcoal,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w500,
                 ),
           ),
