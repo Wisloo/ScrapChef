@@ -5,9 +5,15 @@ import '../state/app_state.dart';
 import '../services/sound_service.dart';
 import '../services/preferences_service.dart';
 import '../theme/app_theme.dart';
+import '../constants/ui_constants.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, required this.appState, required this.onThemeChanged, required this.isDarkMode});
+  const SettingsScreen({
+    super.key,
+    required this.appState,
+    required this.onThemeChanged,
+    required this.isDarkMode,
+  });
 
   final AppState appState;
   final ValueChanged<bool> onThemeChanged;
@@ -26,10 +32,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDarkMode;
-    final bgColor = isDark ? kDarkBackground : kBackground;
-    final cardColor = isDark ? kDarkSurface : kSurface;
-    final textColor = isDark ? kDarkText : kText;
-    final dividerColor = isDark ? kDarkDivider : kDivider;
+    final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
+    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
+    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
+    final dividerColor = isDark ? UIConstants.kDarkDivider : UIConstants.kDivider;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -44,7 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [kPrimary, kPrimaryLight],
+              colors: [UIConstants.kPrimary, UIConstants.kPrimaryLight],
             ),
             borderRadius: BorderRadius.circular(20),
           ),
@@ -71,7 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 _InfoTile(
                   icon: Icons.email_rounded,
-                  iconColor: kPrimary,
+                  iconColor: UIConstants.kPrimary,
                   title: 'Signed in as',
                   value: widget.appState.currentUserEmail ?? 'Not signed in',
                   textColor: textColor,
@@ -79,7 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Divider(color: dividerColor),
                 _InfoTile(
                   icon: Icons.bookmark_rounded,
-                  iconColor: kSecondary,
+                  iconColor: UIConstants.kSecondary,
                   title: 'Saved recipes',
                   value: '${widget.appState.savedRecipes.length}',
                   textColor: textColor,
@@ -100,8 +106,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: const Icon(Icons.logout_rounded),
                     label: const Text('Sign out'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: kAccent,
-                      side: BorderSide(color: kAccent.withAlpha(100)),
+                      foregroundColor: UIConstants.kPrimary,
+                      side: BorderSide(color: UIConstants.kPrimary.withAlpha(100)),
                     ),
                   ),
                 ),
@@ -119,7 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 _ToggleTile(
                   icon: widget.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                  iconColor: kPrimary,
+                  iconColor: UIConstants.kPrimary,
                   title: 'Dark Mode',
                   subtitle: 'Switch between light and dark theme',
                   value: widget.isDarkMode,
@@ -142,7 +148,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             textColor: textColor,
             child: _ToggleTile(
               icon: Icons.vibration,
-              iconColor: kSecondary,
+              iconColor: UIConstants.kSecondary,
               title: 'Haptic Feedback',
               subtitle: 'Vibrate on button presses',
               value: SoundService.isEnabled,
@@ -167,7 +173,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 _InfoTile(
                   icon: Icons.restaurant_rounded,
-                  iconColor: kPrimary,
+                  iconColor: UIConstants.kPrimary,
                   title: 'App Version',
                   value: '1.0.0',
                   textColor: textColor,
@@ -175,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Divider(color: dividerColor),
                 _InfoTile(
                   icon: Icons.code_rounded,
-                  iconColor: kSecondary,
+                  iconColor: UIConstants.kSecondary,
                   title: 'Built with',
                   value: 'Flutter & Dart',
                   textColor: textColor,
@@ -183,7 +189,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Divider(color: dividerColor),
                 _InfoTile(
                   icon: Icons.favorite_rounded,
-                  iconColor: kAccent,
+                  iconColor: UIConstants.kAccent,
                   title: 'Made for',
                   value: 'Reducing Food Waste',
                   textColor: textColor,
@@ -203,7 +209,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: BoxDecoration(
                 color: cardColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: kAccent.withAlpha(100)),
+                border: Border.all(color: UIConstants.kAccent.withAlpha(100)),
                 boxShadow: [
                   BoxShadow(
                     color: textColor.withAlpha(6),
@@ -215,12 +221,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.restore_rounded, color: kAccent),
+                  Icon(Icons.restore_rounded, color: UIConstants.kAccent),
                   const SizedBox(width: 10),
                   Text(
                     'Reset All Data',
                     style: TextStyle(
-                      color: kAccent,
+                      color: UIConstants.kAccent,
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
                     ),
@@ -241,7 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Text(
           isDark ? '🌙 Dark mode enabled' : '☀️ Light mode enabled',
         ),
-        backgroundColor: isDark ? Colors.indigo : kSecondary,
+        backgroundColor: isDark ? Colors.indigo : UIConstants.kSecondary,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -253,7 +259,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Text(
           enabled ? '🔊 Haptic feedback enabled' : '🔇 Haptic feedback disabled',
         ),
-        backgroundColor: enabled ? kSecondary : kText.withAlpha(180),
+        backgroundColor: enabled ? UIConstants.kSecondary : UIConstants.kText.withAlpha(180),
         duration: const Duration(seconds: 1),
       ),
     );
@@ -261,8 +267,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showResetDialog() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? kDarkSurface : kSurface;
-    final textColor = isDark ? kDarkText : kText;
+    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
+    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
 
     showDialog(
       context: context,
@@ -291,7 +297,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Data reset (Demo: data persists)'),
-                  backgroundColor: kPrimary,
+                  backgroundColor: UIConstants.kPrimary,
                 ),
               );
             },
@@ -307,7 +313,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.icon, required this.textColor});
+  const _SectionHeader({
+    required this.title,
+    required this.icon,
+    required this.textColor,
+  });
 
   final String title;
   final IconData icon;
@@ -317,7 +327,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: kPrimary),
+        Icon(icon, size: 20, color: UIConstants.kPrimary),
         const SizedBox(width: 10),
         Text(
           title.toUpperCase(),
@@ -334,7 +344,11 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _SettingsCard extends StatelessWidget {
-  const _SettingsCard({required this.child, required this.cardColor, required this.textColor});
+  const _SettingsCard({
+    required this.child,
+    required this.cardColor,
+    required this.textColor,
+  });
 
   final Widget child;
   final Color cardColor;
@@ -366,8 +380,8 @@ class _ToggleTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.value,
-    required this.onChanged,
     required this.textColor,
+    required this.onChanged,
   });
 
   final IconData icon;
@@ -375,8 +389,8 @@ class _ToggleTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool value;
-  final ValueChanged<bool> onChanged;
   final Color textColor;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -421,9 +435,9 @@ class _ToggleTile extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeTrackColor: kPrimary.withAlpha(50),
+            activeTrackColor: UIConstants.kPrimary.withAlpha(50),
             thumbColor: WidgetStateProperty.resolveWith((states) =>
-                states.contains(WidgetState.selected) ? kPrimary : Colors.white),
+                states.contains(WidgetState.selected) ? UIConstants.kPrimary : Colors.white),
           ),
         ],
       ),

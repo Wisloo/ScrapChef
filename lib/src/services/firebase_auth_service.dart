@@ -39,6 +39,16 @@ class FirebaseAuthService {
     }
   }
 
+  /// Sign in anonymously
+  Future<User?> signInAnonymously() async {
+    try {
+      final userCredential = await _auth.signInAnonymously();
+      return userCredential.user;
+    } catch (e) {
+      throw Exception('Failed to sign in anonymously: $e');
+    }
+  }
+
   /// Sign out
   Future<void> signOut() async {
     try {

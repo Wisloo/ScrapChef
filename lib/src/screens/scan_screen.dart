@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
+import '../constants/ui_constants.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key, required this.appState});
@@ -48,27 +49,27 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   Future<void> _showAnalyzingDialog() {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(color: kSecondary),
-              const SizedBox(height: 20),
-              Text(
-                'Analyzing scrap…',
-                style: Theme.of(ctx).textTheme.titleMedium,
-              ),
-            ],
+      return showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(color: UIConstants.kSecondary),
+                const SizedBox(height: 20),
+                Text(
+                  'Analyzing scrap…',
+                  style: Theme.of(ctx).textTheme.titleMedium,
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
   String? _parseDetectedLabel(String result) {
     if (result.startsWith('Error:')) {
@@ -119,7 +120,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-              const Icon(Icons.eco_rounded, size: 48, color: kSecondary),
+              const Icon(Icons.eco_rounded, size: 48, color: UIConstants.kSecondary),
               const SizedBox(height: 16),
               Text(
                 'Detected: $predictedLabel',
@@ -135,7 +136,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 child: FilledButton(
                   onPressed: () => Navigator.of(ctx).pop(true),
                   style: FilledButton.styleFrom(
-                    backgroundColor: kSecondary,
+                    backgroundColor: UIConstants.kSecondary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -245,9 +246,9 @@ class _ScanScreenState extends State<ScanScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? kDarkBackground : kBackground;
-    final cardColor = isDark ? kDarkSurface : kSurface;
-    final textColor = isDark ? kDarkText : kText;
+    final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
+    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
+    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -255,7 +256,7 @@ class _ScanScreenState extends State<ScanScreen> {
         backgroundColor: bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: kPrimary),
+          icon: const Icon(Icons.arrow_back_rounded, color: UIConstants.kPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Container(
@@ -311,9 +312,9 @@ class _CameraOptions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? kDarkBackground : kBackground;
-    final cardColor = isDark ? kDarkSurface : kSurface;
-    final textColor = isDark ? kDarkText : kText;
+    final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
+    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
+    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
 
     return Container(
       decoration: BoxDecoration(
@@ -322,7 +323,7 @@ class _CameraOptions extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [
             bgColor,
-            kPrimary.withAlpha(10),
+            UIConstants.kPrimary.withAlpha(10),
             bgColor,
           ],
         ),
@@ -339,13 +340,13 @@ class _CameraOptions extends StatelessWidget {
                 height: 140,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [kPrimary.withAlpha(20), kPrimaryLight.withAlpha(10)],
+                    colors: [UIConstants.kPrimary.withAlpha(20), UIConstants.kPrimaryLight.withAlpha(10)],
                   ),
                   shape: BoxShape.circle,
-                  border: Border.all(color: kPrimary.withAlpha(30), width: 3),
+                  border: Border.all(color: UIConstants.kPrimary.withAlpha(30), width: 3),
                   boxShadow: [
                     BoxShadow(
-                      color: kPrimary.withAlpha(40),
+                      color: UIConstants.kPrimary.withAlpha(40),
                       blurRadius: 30,
                       spreadRadius: 5,
                     ),
@@ -354,7 +355,7 @@ class _CameraOptions extends StatelessWidget {
                 child: const Icon(
                   Icons.camera_alt_rounded,
                   size: 60,
-                  color: kPrimary,
+                  color: UIConstants.kPrimary,
                 ),
               ),
               const SizedBox(height: 32),
@@ -384,11 +385,11 @@ class _CameraOptions extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [kPrimary, kPrimaryLight]),
+                    gradient: LinearGradient(colors: [UIConstants.kPrimary, UIConstants.kPrimaryLight]),
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: kPrimary.withAlpha(50),
+                        color: UIConstants.kPrimary.withAlpha(50),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                       ),
@@ -465,7 +466,7 @@ class _CameraOptions extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.info_outline_rounded, size: 18, color: kSecondary),
+                    const Icon(Icons.info_outline_rounded, size: 18, color: UIConstants.kSecondary),
                     const SizedBox(width: 10),
                     Flexible(
                       child: Text(
@@ -501,8 +502,8 @@ class _ImagePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? kDarkSurface : kSurface;
-    final textColor = isDark ? kDarkText : kText;
+    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
+    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
 
     return Stack(
       fit: StackFit.expand,
@@ -518,7 +519,7 @@ class _ImagePreview extends StatelessWidget {
             height: 280,
             decoration: BoxDecoration(
               border: Border.all(
-                color: kPrimary.withAlpha(150),
+                color: UIConstants.kPrimary.withAlpha(150),
                 width: 2,
               ),
               borderRadius: BorderRadius.circular(20),
@@ -629,7 +630,7 @@ class _ImagePreview extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.auto_awesome_rounded, size: 18, color: kPrimary),
+                        const Icon(Icons.auto_awesome_rounded, size: 18, color: UIConstants.kPrimary),
                         const SizedBox(width: 8),
                         Text(
                           'Confirm the scrap type',
@@ -683,11 +684,11 @@ class _ImagePreview extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)]),
+                              gradient: LinearGradient(colors: [UIConstants.kSecondary, UIConstants.kSecondary.withAlpha(200)]),
                               borderRadius: BorderRadius.circular(14),
                               boxShadow: [
                                 BoxShadow(
-                                  color: kSecondary.withAlpha(60),
+                                  color: UIConstants.kSecondary.withAlpha(60),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
@@ -734,7 +735,7 @@ class _CornerBracket extends StatelessWidget {
   Widget build(BuildContext context) {
     const double size = 40;
     const double thickness = 4;
-    const Color color = kPrimary;
+    const Color color = UIConstants.kPrimary;
 
     return SizedBox(
       width: size,
@@ -821,8 +822,8 @@ class _ManualLabelSheetState extends State<_ManualLabelSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? kDarkSurface : kSurface;
-    final textColor = isDark ? kDarkText : kText;
+    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
+    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
 
     return SafeArea(
       child: Container(
@@ -860,14 +861,14 @@ class _ManualLabelSheetState extends State<_ManualLabelSheet> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [kAccent.withAlpha(20), kAccent.withAlpha(10)],
+                      colors: [UIConstants.kAccent.withAlpha(20), UIConstants.kAccent.withAlpha(10)],
                     ),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: kAccent.withAlpha(30)),
+                    border: Border.all(color: UIConstants.kAccent.withAlpha(30)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.warning_rounded, color: kAccent, size: 20),
+                      Icon(Icons.warning_rounded, color: UIConstants.kAccent, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -924,12 +925,12 @@ class _ManualLabelSheetState extends State<_ManualLabelSheet> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
                           gradient: isSelected
-                              ? LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)])
+                              ? LinearGradient(colors: [UIConstants.kSecondary, UIConstants.kSecondary.withAlpha(200)])
                               : null,
                           color: isSelected ? null : textColor.withAlpha(10),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? kSecondary : textColor.withAlpha(30),
+                            color: isSelected ? UIConstants.kSecondary : textColor.withAlpha(30),
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -995,12 +996,12 @@ class _ManualLabelSheetState extends State<_ManualLabelSheet> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         decoration: BoxDecoration(
                           gradient: selectedLabel != null
-                              ? LinearGradient(colors: [kSecondary, kSecondary.withAlpha(200)])
+                              ? LinearGradient(colors: [UIConstants.kSecondary, UIConstants.kSecondary.withAlpha(200)])
                               : null,
                           color: selectedLabel != null ? null : cardColor.withAlpha(230),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: selectedLabel != null ? kSecondary : textColor.withAlpha(20),
+                            color: selectedLabel != null ? UIConstants.kSecondary : textColor.withAlpha(20),
                           ),
                         ),
                         child: Row(

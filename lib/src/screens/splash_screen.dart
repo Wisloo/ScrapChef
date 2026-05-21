@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../constants/ui_constants.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key, required this.onComplete});
@@ -84,8 +85,8 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? kDarkBackground : kBackground;
-    final textColor = isDark ? kDarkText : kText;
+    final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
+    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -105,22 +106,22 @@ class _SplashScreenState extends State<SplashScreen>
                       width: 140,
                       height: 140,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [kPrimary, kPrimaryLight],
+                        gradient: LinearGradient(
+                          colors: [UIConstants.kPrimary, UIConstants.kPrimaryLight],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(35),
                         boxShadow: [
                           BoxShadow(
-                            color: kPrimary.withAlpha(60),
+                            color: UIConstants.kPrimary.withAlpha(60),
                             blurRadius: 30,
                             offset: const Offset(0, 10),
                           ),
                         ],
                       ),
                       child: const Icon(
-                        Icons.eco_rounded,
+                        Icons.eco,
                         size: 70,
                         color: Colors.white,
                       ),
@@ -169,7 +170,7 @@ class _SplashScreenState extends State<SplashScreen>
                 child: CircularProgressIndicator(
                   strokeWidth: 3,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    kPrimary.withAlpha(150),
+                    UIConstants.kPrimary.withAlpha(150),
                   ),
                 ),
               ),

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../models.dart';
 import '../state/app_state.dart';
-import '../theme/app_theme.dart';
+import '../constants/ui_constants.dart';
 
 class RecipeDetailScreen extends StatelessWidget {
   const RecipeDetailScreen({super.key, required this.recipe, required this.appState});
@@ -14,9 +14,9 @@ class RecipeDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? kDarkBackground : kBackground;
-    final cardColor = isDark ? kDarkSurface : kSurface;
-    final textColor = isDark ? kDarkText : kText;
+    final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
+    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
+    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
 
     final isSaved = appState.isRecipeSaved(recipe);
 
@@ -27,7 +27,7 @@ class RecipeDetailScreen extends StatelessWidget {
           SliverAppBar(
             expandedHeight: 220,
             pinned: true,
-            backgroundColor: kPrimary,
+            backgroundColor: UIConstants.kPrimary,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 recipe.title,
@@ -40,7 +40,7 @@ class RecipeDetailScreen extends StatelessWidget {
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [kPrimary, kPrimaryLight.withAlpha(220)],
+                    colors: [UIConstants.kPrimary, UIConstants.kPrimaryLight.withAlpha(220)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -75,7 +75,7 @@ class RecipeDetailScreen extends StatelessWidget {
                   _SectionTitle(
                     icon: Icons.shopping_basket_rounded,
                     title: 'Ingredients',
-                    color: kPrimary,
+                    color: UIConstants.kPrimary,
                     textColor: textColor,
                   ),
                   const SizedBox(height: 16),
@@ -102,7 +102,7 @@ class RecipeDetailScreen extends StatelessWidget {
                                 width: 8,
                                 height: 8,
                                 decoration: const BoxDecoration(
-                                  color: kSecondary,
+                                  color: UIConstants.kSecondary,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -127,7 +127,7 @@ class RecipeDetailScreen extends StatelessWidget {
                   _SectionTitle(
                     icon: Icons.format_list_numbered_rounded,
                     title: 'Steps',
-                    color: kPrimary,
+                    color: UIConstants.kPrimary,
                     textColor: textColor,
                   ),
                   const SizedBox(height: 16),
@@ -160,17 +160,17 @@ class RecipeDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [kPrimary.withAlpha(15), kPrimaryLight.withAlpha(8)],
+                          colors: [UIConstants.kPrimary.withAlpha(15), UIConstants.kPrimaryLight.withAlpha(8)],
                         ),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: kPrimary.withAlpha(30)),
+                        border: Border.all(color: UIConstants.kPrimary.withAlpha(30)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.lightbulb_rounded, color: kPrimary, size: 20),
+                              Icon(Icons.lightbulb_rounded, color: UIConstants.kPrimary, size: 20),
                               const SizedBox(width: 8),
                               Text(
                                 'Chef\'s Note',
@@ -203,7 +203,7 @@ class RecipeDetailScreen extends StatelessWidget {
                         child: _ActionButton(
                           icon: isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                           label: isSaved ? 'Saved' : 'Save',
-                          color: isSaved ? kSecondary : textColor,
+                          color: isSaved ? UIConstants.kSecondary : textColor,
                           cardColor: cardColor,
                           onTap: () async {
                             HapticFeedback.mediumImpact();
@@ -219,7 +219,7 @@ class RecipeDetailScreen extends StatelessWidget {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(appState.isRecipeSaved(recipe) ? 'Recipe saved!' : 'Recipe removed.'),
-                                  backgroundColor: kSecondary,
+                                  backgroundColor: UIConstants.kSecondary,
                                 ),
                               );
                             }
@@ -231,7 +231,7 @@ class RecipeDetailScreen extends StatelessWidget {
                         child: _ActionButton(
                           icon: Icons.note_add_rounded,
                           label: 'Note',
-                          color: kPrimary,
+                          color: UIConstants.kPrimary,
                           cardColor: cardColor,
                           onTap: () async {
                             HapticFeedback.mediumImpact();
@@ -261,12 +261,14 @@ class RecipeDetailScreen extends StatelessWidget {
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
                               builder: (sheetContext) => Padding(
-                                padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+                                padding: EdgeInsets.only(
+                                    bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
                                 child: Container(
                                   padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
                                     color: cardColor,
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                    borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(24)),
                                   ),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
@@ -274,7 +276,10 @@ class RecipeDetailScreen extends StatelessWidget {
                                     children: [
                                       Text(
                                         'Recipe note',
-                                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: textColor),
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                          color: textColor),
                                       ),
                                       const SizedBox(height: 12),
                                       TextField(
@@ -282,7 +287,8 @@ class RecipeDetailScreen extends StatelessWidget {
                                         minLines: 3,
                                         maxLines: 6,
                                         decoration: const InputDecoration(
-                                          hintText: 'Add tweaks, substitutions, or portion notes...',
+                                          hintText:
+                                              'Add tweaks, substitutions, or portion notes...',
                                         ),
                                       ),
                                       const SizedBox(height: 16),
@@ -290,14 +296,17 @@ class RecipeDetailScreen extends StatelessWidget {
                                         children: [
                                           Expanded(
                                             child: OutlinedButton(
-                                              onPressed: () => Navigator.of(sheetContext).pop(),
+                                              onPressed: () =>
+                                                  Navigator.of(sheetContext).pop(),
                                               child: const Text('Cancel'),
                                             ),
                                           ),
                                           const SizedBox(width: 12),
                                           Expanded(
                                             child: FilledButton(
-                                              onPressed: () => Navigator.of(sheetContext).pop(controller.text.trim()),
+                                              onPressed: () =>
+                                                  Navigator.of(sheetContext)
+                                                      .pop(controller.text.trim()),
                                               child: const Text('Save note'),
                                             ),
                                           ),
@@ -311,9 +320,11 @@ class RecipeDetailScreen extends StatelessWidget {
 
                             if (note != null) {
                               if (!appState.isRecipeSaved(recipe)) {
-                                await appState.toggleSavedRecipe(recipe, notes: note.isEmpty ? null : note);
+                                await appState.toggleSavedRecipe(
+                                    recipe, notes: note.isEmpty ? null : note);
                               } else if (note.isNotEmpty) {
-                                await appState.updateSavedRecipeNotes(recipe.stableId, note);
+                                await appState.updateSavedRecipeNotes(
+                                    recipe.stableId, note);
                               }
                             }
                           },
@@ -324,14 +335,14 @@ class RecipeDetailScreen extends StatelessWidget {
                         child: _ActionButton(
                           icon: Icons.share_rounded,
                           label: 'Share',
-                          color: kPrimary,
+                          color: UIConstants.kPrimary,
                           cardColor: cardColor,
                           onTap: () {
                             HapticFeedback.mediumImpact();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Share feature coming soon!'),
-                                backgroundColor: kPrimary,
+                                backgroundColor: UIConstants.kPrimary,
                               ),
                             );
                           },
@@ -361,21 +372,21 @@ class _MatchBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [kSecondary.withAlpha(20), kSecondary.withAlpha(10)],
+          colors: [UIConstants.kSecondary.withAlpha(20), UIConstants.kSecondary.withAlpha(10)],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: kSecondary.withAlpha(50)),
+        border: Border.all(color: UIConstants.kSecondary.withAlpha(50)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.auto_awesome_rounded, size: 16, color: kSecondary),
+          const Icon(Icons.auto_awesome_rounded, size: 16, color: UIConstants.kSecondary),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
               matchReason,
               style: const TextStyle(
-                color: kSecondary,
+                color: UIConstants.kSecondary,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -388,7 +399,12 @@ class _MatchBadge extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.icon, required this.title, required this.color, required this.textColor});
+  const _SectionTitle({
+    required this.icon,
+    required this.title,
+    required this.color,
+    required this.textColor,
+  });
 
   final IconData icon;
   final String title;
@@ -419,7 +435,7 @@ class _Step extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? kDarkText : kText;
+    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -432,14 +448,14 @@ class _Step extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [kPrimary.withAlpha(20), kPrimaryLight.withAlpha(10)],
+                colors: [UIConstants.kPrimary.withAlpha(20), UIConstants.kPrimaryLight.withAlpha(10)],
               ),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: kPrimary.withAlpha(40)),
+              border: Border.all(color: UIConstants.kPrimary.withAlpha(40)),
             ),
             child: Text(
               number,
-              style: const TextStyle(fontWeight: FontWeight.w700, color: kPrimary),
+              style: const TextStyle(fontWeight: FontWeight.w700, color: UIConstants.kPrimary),
             ),
           ),
           const SizedBox(width: 14),
@@ -456,7 +472,13 @@ class _Step extends StatelessWidget {
 }
 
 class _ActionButton extends StatelessWidget {
-  const _ActionButton({required this.icon, required this.label, required this.onTap, required this.color, required this.cardColor});
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.color,
+    required this.cardColor,
+  });
 
   final IconData icon;
   final String label;
@@ -467,7 +489,7 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? kDarkText : kText;
+    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
 
     return GestureDetector(
       onTap: onTap,

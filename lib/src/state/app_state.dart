@@ -8,6 +8,7 @@ import '../services/firebase_scrap_store.dart';
 import '../services/gemini_service.dart';
 import '../services/recipe_service.dart';
 import '../services/sound_service.dart';
+import 'package:flutter/foundation.dart';
 
 class AppState extends ChangeNotifier {
   static const double scanConfidenceThreshold = 0.70;

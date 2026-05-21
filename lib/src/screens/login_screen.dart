@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
+import '../constants/ui_constants.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.appState});
@@ -76,9 +77,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final colors = theme.colorScheme;
     final textColor = colors.onSurface;
-    final subtleTextColor = isDark ? kDarkTextLight : kTextLight;
-    final bgColor = isDark ? kDarkBackground : kBackground;
-    final cardColor = isDark ? kDarkSurface : kSurface;
+    final subtleTextColor = isDark ? UIConstants.kDarkTextLight : UIConstants.kTextLight;
+    final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
+    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -88,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: isDark
-                ? [kDarkBackground, kDarkSurface]
+                ? [UIConstants.kDarkBackground, UIConstants.kDarkSurface]
                 : [const Color(0xFFF7F0E6), bgColor],
           ),
         ),
@@ -103,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: BoxDecoration(
                     color: cardColor,
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: isDark ? kDarkDivider : kDivider),
+                    border: Border.all(color: isDark ? UIConstants.kDarkDivider : UIConstants.kDivider),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withAlpha(isDark ? 60 : 12),
@@ -123,13 +124,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  kPrimary.withAlpha(36),
-                                  kSecondary.withAlpha(18),
+                                  UIConstants.kPrimary.withAlpha(36),
+                                  UIConstants.kSecondary.withAlpha(18),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: const Icon(Icons.eco_rounded, color: kPrimary, size: 32),
+                            child: const Icon(Icons.eco_rounded, color: UIConstants.kPrimary, size: 32),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -226,9 +227,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? kDarkSurfaceElevated : const Color(0xFFF6EFE6),
+                          color: isDark ? UIConstants.kDarkSurfaceElevated : const Color(0xFFF6EFE6),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isDark ? kDarkDivider : kDivider),
+                          border: Border.all(color: isDark ? UIConstants.kDarkDivider : UIConstants.kDivider),
                         ),
                         child: Text(
                           'We use Firebase to keep your recipes and preferences synced across devices.',
@@ -245,11 +246,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () {
                             _emailController.text = 'demo@scrapchef.local';
                             _passwordController.text = 'demo123456';
+                            _continue();
                           },
                           child: Text(
                             'Use demo login',
                             style: TextStyle(
-                              color: kPrimary,
+                              color: UIConstants.kPrimary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -278,19 +280,19 @@ class _FeatureChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: kPrimary.withAlpha(12),
+        color: UIConstants.kPrimary.withAlpha(12),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: kPrimary.withAlpha(24)),
+        border: Border.all(color: UIConstants.kPrimary.withAlpha(24)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: kPrimary),
+          Icon(icon, size: 16, color: UIConstants.kPrimary),
           const SizedBox(width: 8),
           Text(
             label,
             style: const TextStyle(
-              color: kText,
+              color: UIConstants.kText,
               fontWeight: FontWeight.w600,
               fontSize: 13,
             ),

@@ -1,65 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-// Vibrant earthy colors from backup
-const Color kPrimary = Color(0xFF5D4037);    // Modern Warm Brown
-const Color kPrimaryLight = Color(0xFF8A6B55); // Modern Light Warm Brown
-const Color kSecondary = Color(0xFFD9643E);  // Modern Terracotta Orange
-const Color kAccent = Color(0xFF5A3D31);     // Dark Charcoal
-const Color kBackground = Color(0xFFFBF8F0); // Soft Off-White
-const Color kSurface = Color(0xFFFFFFFF);    // White
-const Color kText = Color(0xFF2E2E2E);       // Near Black
-const Color kTextLight = Color(0xFF8C7B6B);  // Muted Gray
-const Color kDivider = Color(0xFFE2D7C5);    // Light Beige
-const Color kMuted = Color(0xFF9A8B7E);      // Muted
-const Color kSuccess = Color(0xFFA8D5BA);     // Light Green
-// Additional colors for improved UI
-const Color kError = Color(0xFFE57373); // Soft Red for errors
-const Color kErrorDark = Color(0xFFB71C1C);
-const Color kAccentDark = Color(0xFF8A7A6C); // Dark mode accent variant
-const Color kSecondaryLight = Color(0xFFD99A6F); // Dark mode secondary variant
-const Color kDarkSuccess = Color(0xFF2E7D32); // Dark mode success variant
-
-const Color kDarkBackground = Color(0xFF1E1A16);
-const Color kDarkSurface = Color(0xFF2C251F);
-const Color kDarkSurfaceElevated = Color(0xFF352D26);
-const Color kDarkText = Color(0xFFE8DCCF);
-const Color kDarkTextLight = Color(0xFFB8AA9A);
-const Color kDarkDivider = Color(0xFF473D34);
+import '../constants/ui_constants.dart';
 
 ThemeData buildLightTheme() {
   const scheme = ColorScheme.light(
-    primary: kPrimary,
-    secondary: kSecondary,
-    tertiary: kAccent,
-    surface: kSurface,
+    primary: UIConstants.kPrimary,
+    secondary: UIConstants.kSecondary,
+    tertiary: UIConstants.kAccent,
+    surface: UIConstants.kSurface,
     onPrimary: Colors.white,
     onSecondary: Colors.white,
-    onSurface: kText,
+    onSurface: UIConstants.kText,
   );
 
   return ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
     colorScheme: scheme,
-    scaffoldBackgroundColor: kBackground,
+    scaffoldBackgroundColor: UIConstants.kBackground,
     splashFactory: InkSparkle.splashFactory,
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
       centerTitle: true,
-      iconTheme: IconThemeData(color: kText),
+      iconTheme: IconThemeData(color: UIConstants.kText),
       titleTextStyle: TextStyle(
-        color: kText,
-        fontSize: 18,
+        color: UIConstants.kText,
+        fontSize: 20,
         fontWeight: FontWeight.w700,
+        fontFamily: UIConstants.kPrimaryFont,
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: kPrimary,
+        backgroundColor: UIConstants.kPrimary,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: kMuted,
+        disabledBackgroundColor: UIConstants.kMuted,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -67,14 +43,14 @@ ThemeData buildLightTheme() {
       ),
     ),
     cardTheme: CardThemeData(
-      color: kSurface,
+      color: UIConstants.kSurface,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
     ),
     dividerTheme: const DividerThemeData(
-      color: kDivider,
+      color: UIConstants.kDivider,
       thickness: 1,
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -83,61 +59,66 @@ ThemeData buildLightTheme() {
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: kDivider),
+        borderSide: const BorderSide(color: UIConstants.kDivider),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: kDivider),
+        borderSide: const BorderSide(color: UIConstants.kDivider),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: kPrimary, width: 2),
+        borderSide: const BorderSide(color: UIConstants.kPrimary, width: 2),
       ),
-      labelStyle: const TextStyle(color: kTextLight),
-      hintStyle: const TextStyle(color: kMuted),
+      labelStyle: const TextStyle(color: UIConstants.kTextLight, fontFamily: UIConstants.kPrimaryFont),
+      hintStyle: const TextStyle(color: UIConstants.kMuted, fontFamily: UIConstants.kPrimaryFont),
     ),
     textTheme: TextTheme(
-      headlineLarge: GoogleFonts.lora(
+      headlineLarge: GoogleFonts.playfairDisplay(
         fontSize: 32,
         fontWeight: FontWeight.w800,
-        color: kText,
+        color: UIConstants.kText,
         letterSpacing: -0.5,
+        height: UIConstants.kHeadlineLineHeight,
       ),
-      headlineMedium: GoogleFonts.lora(
+      headlineMedium: GoogleFonts.playfairDisplay(
         fontSize: 26,
         fontWeight: FontWeight.w800,
-        color: kText,
+        color: UIConstants.kText,
         letterSpacing: -0.5,
+        height: UIConstants.kSubheadlineLineHeight,
       ),
-      headlineSmall: GoogleFonts.lora(
+      headlineSmall: GoogleFonts.playfairDisplay(
         fontSize: 22,
         fontWeight: FontWeight.w700,
-        color: kText,
+        color: UIConstants.kText,
+        height: UIConstants.kSubheadlineLineHeight,
       ),
-      titleLarge: GoogleFonts.lora(
+      titleLarge: GoogleFonts.playfairDisplay(
         fontSize: 18,
         fontWeight: FontWeight.w700,
-        color: kText,
+        color: UIConstants.kText,
+        height: UIConstants.kBodyLineHeight,
       ),
-      titleMedium: GoogleFonts.openSans(
+      titleMedium: GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: kText,
+        color: UIConstants.kText,
+        height: UIConstants.kBodyLineHeight,
       ),
-      bodyLarge: GoogleFonts.openSans(
+      bodyLarge: GoogleFonts.inter(
         fontSize: 16,
-        color: kText,
-        height: 1.6,
+        color: UIConstants.kText,
+        height: UIConstants.kBodyLineHeight,
       ),
-      bodyMedium: GoogleFonts.openSans(
+      bodyMedium: GoogleFonts.inter(
         fontSize: 14,
-        color: kText,
-        height: 1.6,
+        color: UIConstants.kText,
+        height: UIConstants.kBodyLineHeight,
       ),
-      bodySmall: GoogleFonts.openSans(
+      bodySmall: GoogleFonts.inter(
         fontSize: 12,
-        color: kTextLight,
-        height: 1.5,
+        color: UIConstants.kTextLight,
+        height: UIConstants.kSmallLineHeight,
       ),
     ),
   );
@@ -145,37 +126,38 @@ ThemeData buildLightTheme() {
 
 ThemeData buildDarkTheme() {
   const scheme = ColorScheme.dark(
-    primary: kPrimaryLight,
-    secondary: kSecondary,
-    tertiary: kAccent,
-    surface: kDarkSurface,
+    primary: UIConstants.kPrimaryLight,
+    secondary: UIConstants.kSecondary,
+    tertiary: UIConstants.kAccent,
+    surface: UIConstants.kDarkSurface,
     onPrimary: Colors.white,
     onSecondary: Colors.white,
-    onSurface: kDarkText,
+    onSurface: UIConstants.kDarkText,
   );
 
   return ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: scheme,
-    scaffoldBackgroundColor: kDarkBackground,
+    scaffoldBackgroundColor: UIConstants.kDarkBackground,
     splashFactory: InkSparkle.splashFactory,
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
       centerTitle: true,
-      iconTheme: IconThemeData(color: kDarkText),
+      iconTheme: IconThemeData(color: UIConstants.kDarkText),
       titleTextStyle: TextStyle(
-        color: kDarkText,
-        fontSize: 18,
+        color: UIConstants.kDarkText,
+        fontSize: 20,
         fontWeight: FontWeight.w700,
+        fontFamily: UIConstants.kPrimaryFont,
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: kPrimaryLight,
+        backgroundColor: UIConstants.kPrimaryLight,
         foregroundColor: Colors.white,
-        disabledBackgroundColor: kDarkTextLight,
+        disabledBackgroundColor: UIConstants.kDarkTextLight,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -183,77 +165,82 @@ ThemeData buildDarkTheme() {
       ),
     ),
     cardTheme: CardThemeData(
-      color: kDarkSurfaceElevated,
+      color: UIConstants.kDarkSurfaceElevated,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
     ),
     dividerTheme: const DividerThemeData(
-      color: kDarkDivider,
+      color: UIConstants.kDarkDivider,
       thickness: 1,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: kDarkSurfaceElevated,
+      fillColor: UIConstants.kDarkSurfaceElevated,
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: kDarkDivider),
+        borderSide: const BorderSide(color: UIConstants.kDarkDivider),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: kDarkDivider),
+        borderSide: const BorderSide(color: UIConstants.kDarkDivider),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: kPrimaryLight, width: 2),
+        borderSide: const BorderSide(color: UIConstants.kPrimaryLight, width: 2),
       ),
-      labelStyle: const TextStyle(color: kDarkTextLight),
-      hintStyle: const TextStyle(color: kDarkTextLight),
+      labelStyle: const TextStyle(color: UIConstants.kDarkTextLight, fontFamily: UIConstants.kPrimaryFont),
+      hintStyle: const TextStyle(color: UIConstants.kDarkTextLight, fontFamily: UIConstants.kPrimaryFont),
     ),
     textTheme: TextTheme(
-      headlineLarge: GoogleFonts.lora(
+      headlineLarge: GoogleFonts.playfairDisplay(
         fontSize: 32,
         fontWeight: FontWeight.w800,
-        color: kDarkText,
+        color: UIConstants.kDarkText,
         letterSpacing: -0.5,
+        height: UIConstants.kHeadlineLineHeight,
       ),
-      headlineMedium: GoogleFonts.lora(
+      headlineMedium: GoogleFonts.playfairDisplay(
         fontSize: 26,
         fontWeight: FontWeight.w800,
-        color: kDarkText,
+        color: UIConstants.kDarkText,
         letterSpacing: -0.5,
+        height: UIConstants.kSubheadlineLineHeight,
       ),
-      headlineSmall: GoogleFonts.lora(
+      headlineSmall: GoogleFonts.playfairDisplay(
         fontSize: 22,
         fontWeight: FontWeight.w700,
-        color: kDarkText,
+        color: UIConstants.kDarkText,
+        height: UIConstants.kSubheadlineLineHeight,
       ),
-      titleLarge: GoogleFonts.lora(
+      titleLarge: GoogleFonts.playfairDisplay(
         fontSize: 18,
         fontWeight: FontWeight.w700,
-        color: kDarkText,
+        color: UIConstants.kDarkText,
+        height: UIConstants.kBodyLineHeight,
       ),
-      titleMedium: GoogleFonts.openSans(
+      titleMedium: GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: kDarkText,
+        color: UIConstants.kDarkText,
+        height: UIConstants.kBodyLineHeight,
       ),
-      bodyLarge: GoogleFonts.openSans(
+      bodyLarge: GoogleFonts.inter(
         fontSize: 16,
-        color: kDarkText,
-        height: 1.6,
+        color: UIConstants.kDarkText,
+        height: UIConstants.kBodyLineHeight,
       ),
-      bodyMedium: GoogleFonts.openSans(
+      bodyMedium: GoogleFonts.inter(
         fontSize: 14,
-        color: kDarkText,
-        height: 1.6,
+        color: UIConstants.kDarkText,
+        height: UIConstants.kBodyLineHeight,
       ),
-      bodySmall: GoogleFonts.openSans(
+      bodySmall: GoogleFonts.inter(
         fontSize: 12,
-        color: kDarkTextLight,
-        height: 1.5,
+        color: UIConstants.kDarkTextMuted,
+        height: UIConstants.kSmallLineHeight,
       ),
     ),
   );
