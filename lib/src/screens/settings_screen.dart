@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../state/app_state.dart';
-import '../services/sound_service.dart';
 import '../services/preferences_service.dart';
 import '../theme/app_theme.dart';
 import '../constants/ui_constants.dart';
@@ -17,21 +15,25 @@ class SettingsScreen extends StatefulWidget {
 
   final AppState appState;
   final ValueChanged<bool> onThemeChanged;
-  final bool isDarkMode;
+  final bool? isDarkMode; // isDarkMode may be null if not provided
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isDark = false;
+
   @override
   void initState() {
     super.initState();
+    // Initialize dark mode from passed value or persisted preference
+    _isDark = widget.isDarkMode ?? PreferencesService.isDarkMode;
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.isDarkMode;
+    final isDark = _isDark;
     final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
     final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
     final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
@@ -96,7 +98,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: OutlinedButton.icon(
                     onPressed: widget.appState.isSignedIn
                         ? () async {
-                            HapticFeedback.mediumImpact();
                             await widget.appState.signOut();
                             if (context.mounted) {
                               Navigator.of(context).pop();
@@ -124,42 +125,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 _ToggleTile(
-                  icon: widget.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                  icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                   iconColor: UIConstants.kPrimary,
                   title: 'Dark Mode',
                   subtitle: 'Switch between light and dark theme',
-                  value: widget.isDarkMode,
+                  value: isDark,
                   textColor: textColor,
-                  onChanged: (value) {
-                    HapticFeedback.mediumImpact();
+                  onChanged: (value) async {
+                    setState(() {
+                      _isDark = value;
+                    });
+                    // Persist the preference
+                    await PreferencesService.setDarkMode(value);
+                    debugPrint('Dark mode preference saved: $value');
                     widget.onThemeChanged(value);
                     _showThemeSnackBar(value);
                   },
                 ),
               ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Feedback Section
-          _SectionHeader(title: 'Feedback', icon: Icons.touch_app_rounded, textColor: textColor),
-          const SizedBox(height: 12),
-          _SettingsCard(
-            cardColor: cardColor,
-            textColor: textColor,
-            child: _ToggleTile(
-              icon: Icons.vibration,
-              iconColor: UIConstants.kSecondary,
-              title: 'Haptic Feedback',
-              subtitle: 'Vibrate on button presses',
-              value: SoundService.isEnabled,
-              textColor: textColor,
-              onChanged: (value) async {
-                if (value) HapticFeedback.mediumImpact();
-                SoundService.setEnabled(value);
-                await PreferencesService.setHapticFeedback(value);
-                setState(() {});
-                _showHapticSnackBar(value);
-              },
             ),
           ),
           const SizedBox(height: 24),
@@ -201,7 +184,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Reset Button
           GestureDetector(
             onTap: () {
-              HapticFeedback.mediumImpact();
               _showResetDialog();
             },
             child: Container(
@@ -253,162 +235,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showHapticSnackBar(bool enabled) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          enabled ? '🔊 Haptic feedback enabled' : '🔇 Haptic feedback disabled',
-        ),
-        backgroundColor: enabled ? UIConstants.kSecondary : UIConstants.kText.withAlpha(180),
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
-
   void _showResetDialog() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
-    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
-
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Reset All Data?',
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: Text(
-          'This will clear all your scanned scraps and saved recipes.',
-          style: TextStyle(color: textColor.withAlpha(160)),
-        ),
+      builder: (_) => AlertDialog(
+        title: const Text('Reset All Data?'),
+        content: const Text('This will clear all saved recipes and scraps.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel', style: TextStyle(color: textColor)),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Data reset (Demo: data persists)'),
-                  backgroundColor: UIConstants.kPrimary,
-                ),
-              );
+            onPressed: () async {
+              await widget.appState.signOut();
+              await widget.appState.clearLocalData();
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              }
             },
             child: const Text(
               'Reset',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700),
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.icon,
-    required this.textColor,
-  });
-
-  final String title;
-  final IconData icon;
-  final Color textColor;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _SectionHeader({required String title, required IconData icon, required Color textColor}) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: UIConstants.kPrimary),
-        const SizedBox(width: 10),
+        Icon(icon, color: textColor, size: 20),
+        const SizedBox(width: 8),
         Text(
-          title.toUpperCase(),
+          title,
           style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: textColor.withAlpha(120),
-            letterSpacing: 1.2,
+            color: textColor,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
     );
   }
-}
 
-class _SettingsCard extends StatelessWidget {
-  const _SettingsCard({
-    required this.child,
-    required this.cardColor,
-    required this.textColor,
-  });
-
-  final Widget child;
-  final Color cardColor;
-  final Color textColor;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _SettingsCard({required Color cardColor, required Color textColor, required Widget child}) {
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: textColor.withAlpha(6),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: textColor.withAlpha(4),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: child,
     );
   }
-}
 
-class _ToggleTile extends StatelessWidget {
-  const _ToggleTile({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-    required this.value,
-    required this.textColor,
-    required this.onChanged,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-  final bool value;
-  final Color textColor;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _InfoTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String value,
+    required Color textColor,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [iconColor.withAlpha(20), iconColor.withAlpha(10)],
-              ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, size: 24, color: iconColor),
-          ),
-          const SizedBox(width: 16),
+          Icon(icon, color: iconColor, size: 18),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,17 +320,58 @@ class _ToggleTile extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
+                    color: textColor.withAlpha(160),
+                    fontSize: 12,
                   ),
                 ),
-                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ToggleTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required Color textColor,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, color: iconColor, size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 13,
-                    color: textColor.withAlpha(140),
+                    color: textColor.withAlpha(160),
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -435,65 +380,7 @@ class _ToggleTile extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeTrackColor: UIConstants.kPrimary.withAlpha(50),
-            thumbColor: WidgetStateProperty.resolveWith((states) =>
-                states.contains(WidgetState.selected) ? UIConstants.kPrimary : Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoTile extends StatelessWidget {
-  const _InfoTile({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.value,
-    required this.textColor,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String value;
-  final Color textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [iconColor.withAlpha(20), iconColor.withAlpha(10)],
-              ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, size: 24, color: iconColor),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: textColor,
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              color: textColor.withAlpha(140),
-              fontWeight: FontWeight.w600,
-            ),
+            activeColor: UIConstants.kPrimary,
           ),
         ],
       ),

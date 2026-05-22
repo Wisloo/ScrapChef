@@ -7,7 +7,6 @@ import 'state/app_state.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/scan_screen.dart';
-import 'screens/manual_verify_screen.dart';
 import 'screens/recipe_detail_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/splash_screen.dart';
@@ -27,23 +26,28 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
 
   @override
   void initState() {
+    debugPrint('[App] initState called');
     super.initState();
     _loadPreferences();
+    debugPrint('[App] Creating appState');
     appState = AppState(
       classifierService: GeminiService(
         apiKey: 'AIzaSyDagI2DoJllJumvfV2pZWYuJNwoFrw381A',
       ),
       recipeService: RecipeService(),
     );
+    debugPrint('[App] appState created');
   }
 
   Future<void> _loadPreferences() async {
+    debugPrint('[App] Loading preferences');
     await PreferencesService.loadPreferences();
     await SoundService.init();
     setState(() {
       isDarkMode = PreferencesService.isDarkMode;
       _preferencesLoaded = true;
     });
+    debugPrint('[App] Preferences loaded');
   }
 
   @override
@@ -54,7 +58,9 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[App] Build called');
     if (!_preferencesLoaded) {
+      debugPrint('[App] Preferences not loaded yet');
       return const MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
@@ -63,12 +69,15 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
       );
     }
 
+    debugPrint('[App] Preferences loaded, checking appState.isReady=${appState.isReady}');
     final Widget startScreen;
     if (!appState.isReady) {
+      debugPrint('[App] appState not ready yet');
       startScreen = const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     } else if (appState.isSignedIn) {
+      debugPrint('[App] User signed in, showing HomeScreen');
       startScreen = HomeScreen(
         appState: appState,
         isDarkMode: isDarkMode,
@@ -78,6 +87,7 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
         },
       );
     } else if (appState.authFailed) {
+      debugPrint('[App] Auth failed, showing HomeScreen in guest mode');
       // If auth failed, show home screen in guest mode
       startScreen = HomeScreen(
         appState: appState,
@@ -88,6 +98,7 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
         },
       );
     } else {
+      debugPrint('[App] Not signed in, showing LoginScreen');
       startScreen = LoginScreen(appState: appState);
     }
 

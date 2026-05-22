@@ -100,31 +100,23 @@ class _SplashScreenState extends State<SplashScreen>
               builder: (context, child) {
                 return Transform.scale(
                   scale: _logoScale.value,
-                  child: Transform.rotate(
-                    angle: _logoRotate.value,
-                    child: Container(
-                      width: 140,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [UIConstants.kPrimary, UIConstants.kPrimaryLight],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                  child: Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [UIConstants.kPrimary, UIConstants.kPrimaryLight],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(35),
+                      boxShadow: [
+                        BoxShadow(
+                          color: UIConstants.kPrimary.withAlpha(60),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
                         ),
-                        borderRadius: BorderRadius.circular(35),
-                        boxShadow: [
-                          BoxShadow(
-                            color: UIConstants.kPrimary.withAlpha(60),
-                            blurRadius: 30,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.eco,
-                        size: 70,
-                        color: Colors.white,
-                      ),
+                      ],
                     ),
                   ),
                 );

@@ -46,7 +46,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _isSubmitting = true);
-    HapticFeedback.mediumImpact();
 
     try {
       try {
@@ -165,7 +164,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         runSpacing: 10,
                         children: const [
                           _FeatureChip(icon: Icons.camera_alt_rounded, label: 'Scan scraps'),
-                          _FeatureChip(icon: Icons.menu_book_rounded, label: 'Get recipes'),
                           _FeatureChip(icon: Icons.bookmark_rounded, label: 'Save favorites'),
                         ],
                       ),

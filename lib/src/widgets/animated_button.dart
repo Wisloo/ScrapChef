@@ -78,7 +78,7 @@ class _AnimatedButtonState extends State<AnimatedButton>
     setState(() => _isPressed = true);
     _controller.forward();
     if (widget.soundEnabled) {
-      HapticFeedback.selectionClick();
+      // Haptic feedback removed
     }
   }
 
@@ -204,7 +204,7 @@ class _AnimatedSecondaryButtonState extends State<AnimatedSecondaryButton>
   void _onTapDown(TapDownDetails details) {
     setState(() => _isPressed = true);
     _controller.forward();
-    HapticFeedback.selectionClick();
+    // Haptic feedback removed
   }
 
   void _onTapUp(TapUpDetails details) {
@@ -313,7 +313,7 @@ class _AnimatedIconButtonState extends State<AnimatedIconButton>
 
   void _onTapDown(TapDownDetails details) {
     _controller.forward();
-    HapticFeedback.lightImpact();
+    // Haptic feedback removed
   }
 
   void _onTapUp(TapUpDetails details) {

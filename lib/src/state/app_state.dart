@@ -21,13 +21,16 @@ class AppState extends ChangeNotifier {
         _recipeStore = FirebaseRecipeStore(),
         _scrapStore = FirebaseScrapStore() {
     // Initialize the classifier
+    debugPrint('[AppState] Constructor called, starting _bootstrap');
     _bootstrap();
+    debugPrint('[AppState] _bootstrap completed');
   }
 
   final GeminiService _classifierService;
   final FirebaseAuthService _authService;
   final FirebaseRecipeStore _recipeStore;
   final FirebaseScrapStore _scrapStore;
+  StreamSubscription<List<ScrapItem>>? _scrapSubscription;
 
   // Public getter to access classifier from screens
   GeminiService get classifierService => _classifierService;
@@ -78,6 +81,16 @@ class AppState extends ChangeNotifier {
 
   /// Simple item count (more realistic for MVP without weight data)
   int get itemsLogged => _inventory.length;
+
+  /// Number of scans in the past 7 days (for user level calculation)
+  int get weeklyScanCount {
+    final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
+    final count = _inventory.where((item) =>
+      item.loggedAt.isAfter(oneWeekAgo) &&
+      item.source == 'auto-scan' // Only count auto-scans for weekly activity
+    ).length;
+    return count;
+  }
 
   List<RecipeSuggestion> get recipeSuggestions => _recipeService.suggest(_inventory);
 
@@ -143,6 +156,10 @@ class AppState extends ChangeNotifier {
 
   Future<void> signOut() async {
     _savedRecipes.clear();
+    _inventory.clear();
+    // Cancel scrap listener on sign out
+    _scrapSubscription?.cancel();
+    _scrapSubscription = null;
     await _authService.signOut();
     notifyListeners();
   }
@@ -332,6 +349,9 @@ class AppState extends ChangeNotifier {
         print('Failed to clear scraps from Firebase: $e');
       });
     }
+    // Cancel listener as bin is cleared
+    _scrapSubscription?.cancel();
+    _scrapSubscription = null;
     
     notifyListeners();
   }
@@ -348,7 +368,8 @@ class AppState extends ChangeNotifier {
         if (user != null) {
           // Load data asynchronously without blocking app startup
           _reloadSavedRecipes();
-          _reloadScraps();
+          // Set up real-time listener for scraps
+          _setupScrapListener(user.uid);
         }
       });
       
@@ -369,7 +390,8 @@ class AppState extends ChangeNotifier {
       if (_authService.isSignedIn) {
         // Start loading data asynchronously without blocking
         _reloadSavedRecipes();
-        _reloadScraps();
+        // Real-time listener will handle initial load
+        _setupScrapListener(_authService.userId!);
       }
 
       // No isLoaded check for GeminiService
@@ -380,6 +402,14 @@ class AppState extends ChangeNotifier {
       _isBootstrapping = false;
       notifyListeners();
     }
+  
+  }
+
+  /// Clears all locally saved recipes and scrap inventory without affecting authentication state.
+  Future<void> clearLocalData() async {
+    _savedRecipes.clear();
+    _inventory.clear();
+    notifyListeners();
   }
 
   Future<void> _reloadSavedRecipes() async {
@@ -408,6 +438,20 @@ class AppState extends ChangeNotifier {
       _isLoadingRecipes = false;
       notifyListeners();
     }
+  }
+
+  // Real-time scrap listener setup
+  void _setupScrapListener(String userId) {
+    // Cancel any existing subscription
+    _scrapSubscription?.cancel();
+    _scrapSubscription = _scrapStore.watchScraps(userId).listen((scraps) {
+      _inventory
+        ..clear()
+        ..addAll(scraps);
+      notifyListeners();
+    }, onError: (e) {
+      print('Error watching scraps: $e');
+    });
   }
 
   Future<void> _reloadScraps() async {

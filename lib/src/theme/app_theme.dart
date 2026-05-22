@@ -20,7 +20,7 @@ ThemeData buildLightTheme() {
     scaffoldBackgroundColor: UIConstants.kBackground,
     splashFactory: InkSparkle.splashFactory,
     appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.transparent,
+      backgroundColor: UIConstants.kPrimary,
       elevation: 0,
       centerTitle: true,
       iconTheme: IconThemeData(color: UIConstants.kText),
@@ -126,8 +126,8 @@ ThemeData buildLightTheme() {
 
 ThemeData buildDarkTheme() {
   const scheme = ColorScheme.dark(
-    primary: UIConstants.kPrimaryLight,
-    secondary: UIConstants.kSecondary,
+    primary: UIConstants.kDarkSecondary,
+    secondary: UIConstants.kDarkSuccess,
     tertiary: UIConstants.kAccent,
     surface: UIConstants.kDarkSurface,
     onPrimary: Colors.white,
@@ -142,7 +142,7 @@ ThemeData buildDarkTheme() {
     scaffoldBackgroundColor: UIConstants.kDarkBackground,
     splashFactory: InkSparkle.splashFactory,
     appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.transparent,
+      backgroundColor: UIConstants.kDarkSecondary,
       elevation: 0,
       centerTitle: true,
       iconTheme: IconThemeData(color: UIConstants.kDarkText),

@@ -25,7 +25,6 @@ class _ScanScreenState extends State<ScanScreen> {
   bool _isAnalyzing = false;
 
   Future<void> _pickFromCamera() async {
-    HapticFeedback.mediumImpact();
     final image = await _picker.pickImage(
       source: ImageSource.camera,
       maxWidth: 1280,
@@ -37,7 +36,7 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   Future<void> _pickFromGallery() async {
-    HapticFeedback.lightImpact();
+    // HapticFeedback removed
     final image = await _picker.pickImage(
       source: ImageSource.gallery,
       maxWidth: 1280,
@@ -156,7 +155,7 @@ class _ScanScreenState extends State<ScanScreen> {
         predictedLabel,
         confidence: 1.0,
       );
-      HapticFeedback.mediumImpact();
+      // HapticFeedback removed
       Navigator.of(context).pop(widget.appState.lastOutcome);
     }
   }
@@ -177,7 +176,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
     if (label != null && label.isNotEmpty && mounted) {
       widget.appState.handleAutoClassification(label, confidence: 1.0);
-      HapticFeedback.mediumImpact();
+      // HapticFeedback removed
       Navigator.of(context).pop(widget.appState.lastOutcome);
     }
   }
@@ -193,7 +192,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
     if (mounted) {
       loadingShown = true;
-      unawaited(_showAnalyzingDialog());
+      _showAnalyzingDialog();
     }
 
     try {
@@ -919,7 +918,7 @@ class _ManualLabelSheetState extends State<_ManualLabelSheet> {
                     return GestureDetector(
                       onTap: () {
                         setState(() => selectedLabel = label);
-                        HapticFeedback.selectionClick();
+                        // HapticFeedback removed
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

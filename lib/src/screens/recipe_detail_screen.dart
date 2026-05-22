@@ -206,7 +206,7 @@ class RecipeDetailScreen extends StatelessWidget {
                           color: isSaved ? UIConstants.kSecondary : textColor,
                           cardColor: cardColor,
                           onTap: () async {
-                            HapticFeedback.mediumImpact();
+                            // HapticFeedback removed
                             if (!appState.isSignedIn) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Sign in to save recipes.')),
@@ -234,7 +234,7 @@ class RecipeDetailScreen extends StatelessWidget {
                           color: UIConstants.kPrimary,
                           cardColor: cardColor,
                           onTap: () async {
-                            HapticFeedback.mediumImpact();
+                            // HapticFeedback removed
                             if (!appState.isSignedIn) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Sign in to add notes.')),

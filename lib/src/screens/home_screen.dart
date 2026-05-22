@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _openSettings() {
-    SoundService.playClick();
+    // SoundService.playClick(); // Haptic feedback removed
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => SettingsScreen(
@@ -123,84 +123,108 @@ class _HomeScreenState extends State<HomeScreen>
       length: 2,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Stack(
-          children: <Widget>[
-            CustomScrollView(
-              slivers: <Widget>[
-                SliverToBoxAdapter(
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                    child: FadeTransition(
-                      opacity: _heroAnimation,
-                      child: _HeroHeader(
-                        itemsLogged: itemsLogged,
-                        estimatedSavings: estimatedSavings,
-                        onSettingsTap: _openSettings,
+        body: Column(
+          children: [
+            // Fixed top section with logo and title (reduced height)
+            Container(
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    UIConstants.kPrimaryDark.withOpacity(0.3),
+                    UIConstants.kPrimary.withOpacity(0.5),
+                    UIConstants.kPrimaryLight.withOpacity(0.2),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Row(
+                    children: [
+                      Image.asset(
+                        'lib/image/ScrapChefLogo.jpg',
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.contain,
                       ),
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: const SizedBox(height: 12),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: TabBar(
-                      labelColor: Theme.of(context).colorScheme.secondary,
-                      unselectedLabelColor: Theme.of(context).colorScheme
-                          .onSurface
-                          .withAlpha(153),
-                      indicatorColor: Theme.of(context).colorScheme.secondary,
-                      indicatorWeight: 3,
-                      labelStyle: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                      unselectedLabelStyle:
-                          Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.normal),
-                      tabs: const <Widget>[
-                        Tab(text: 'Scan'),
-                        Tab(text: 'Bin'),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: const SizedBox(height: 12),
-                ),
-                SliverFillRemaining(
-                  child: TabBarView(
-                    children: <Widget>[
-                      AppCard(
-                        padding: const EdgeInsets.all(UIConstants.kVerticalGap),
-                        child: _ScanTab(outcome: outcome, itemsLogged: itemsLogged),
-                      ),
-                      AppCard(
-                        padding: const EdgeInsets.all(UIConstants.kVerticalGap),
-                        child: _InventoryTab(
-                          items: inventory,
-                          onBatchSelect: _onBatchSelect,
-                          appState: widget.appState,
-                          onOpenRecipes: _openRecipes,
+                      const SizedBox(width: 10),
+                      Text(
+                        'ScrapChef',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: UIConstants.kHorizontalPadding,
-                    vertical: UIConstants.kVerticalGap),
-                child: _ActionPanel(onScan: _openScanFlow),
               ),
+            ),
+            // Hero header (fixed, reduced padding)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: FadeTransition(
+                opacity: _heroAnimation,
+                child: _HeroHeader(
+                  itemsLogged: itemsLogged,
+                  estimatedSavings: estimatedSavings,
+                  onSettingsTap: _openSettings,
+                ),
+              ),
+            ),
+            // Tab bar (fixed)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: TabBar(
+                labelColor: Theme.of(context).colorScheme.secondary,
+                unselectedLabelColor: Theme.of(context).colorScheme
+                    .onSurface
+                    .withAlpha(153),
+                indicatorColor: Theme.of(context).colorScheme.secondary,
+                indicatorWeight: 3,
+                labelStyle: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+                unselectedLabelStyle:
+                    Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.normal),
+                tabs: const <Widget>[
+                  Tab(text: 'Scan'),
+                  Tab(text: 'Bin'),
+                ],
+              ),
+            ),
+            // Scrollable tab content
+            Expanded(
+              child: TabBarView(
+                children: <Widget>[
+                  Container(
+                    padding: const EdgeInsets.all(UIConstants.kVerticalGap),
+                    child: _ScanTab(outcome: outcome, itemsLogged: itemsLogged, weeklyScanCount: widget.appState.weeklyScanCount),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(UIConstants.kVerticalGap),
+                    child: _InventoryTab(
+                      items: inventory,
+                      onBatchSelect: _onBatchSelect,
+                      appState: widget.appState,
+                      onOpenRecipes: _openRecipes,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Fixed action panel at bottom - continuous without rounded borders
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: UIConstants.kHorizontalPadding,
+                  vertical: UIConstants.kVerticalGap),
+              child: _ActionPanel(onScan: _openScanFlow),
             ),
           ],
         ),
@@ -226,13 +250,8 @@ class _HeroHeader extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Theme.of(context).colorScheme.background,
-            Theme.of(context).colorScheme.primary.withOpacity(0.15),
-            Theme.of(context).colorScheme.primary.withOpacity(0.05)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,16 +264,6 @@ class _HeroHeader extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(
-                        'ScrapChef',
-                        style: GoogleFonts.lora(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
                       Text(
                         'Turn scraps into suppers',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -396,10 +405,11 @@ class _ActionPanel extends StatelessWidget {
 }
 
 class _ScanTab extends StatelessWidget {
-  const _ScanTab({required this.outcome, required this.itemsLogged});
+  const _ScanTab({required this.outcome, required this.itemsLogged, required this.weeklyScanCount});
 
   final ScanOutcome? outcome;
   final int itemsLogged;
+  final int weeklyScanCount;
 
   @override
   Widget build(BuildContext context) {
@@ -407,41 +417,10 @@ class _ScanTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       children: <Widget>[
         _SectionCard(
-          title: 'Scan first',
-          subtitle: 'Camera capture is the main action.',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                'Take a photo of a food scrap, then confirm the label.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(height: 1.4),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: <Widget>[
-                  Expanded(child: _MetricCard(
-                    label: 'Logged',
-                    value: '$itemsLogged',
-                    hint: 'items',
-                  )),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _MetricCard(
-                      label: 'Status',
-                      value: outcome == null
-                          ? 'Ready'
-                          : (outcome!.requiresReview
-                              ? 'Review'
-                              : 'Saved'),
-                      hint: 'scan flow',
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          title: 'Your Level',
+          subtitle: 'Based on weekly activity',
+          child: _UserLevelCard(
+            weeklyCount: weeklyScanCount,
           ),
         ),
         const SizedBox(height: 14),
@@ -450,20 +429,6 @@ class _ScanTab extends StatelessWidget {
           const SizedBox(height: 14),
         ],
         _ImpactLedger(itemsLogged: itemsLogged),
-        const SizedBox(height: 14),
-        const _SectionCard(
-          title: 'How it works',
-          subtitle: 'A shorter interaction focused on scanning.',
-          child: Column(
-            children: <Widget>[
-              _StepRow(number: '1', text: 'Open the camera and take a photo'),
-              const SizedBox(height: 10),
-              _StepRow(number: '2', text: 'Confirm the scrap label'),
-              const SizedBox(height: 10),
-              _StepRow(number: '3', text: 'Save to your scrap bin and get recipe ideas'),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -716,63 +681,7 @@ class _StepRow extends StatelessWidget {
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.label,
-    required this.value,
-    required this.hint,
-  });
-
-  final String label;
-  final String value;
-  final String hint;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme
-                        .onSurface
-                        .withAlpha(140),
-                    fontWeight: FontWeight.normal,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                    letterSpacing: -0.3,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              hint,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme
-                        .onSurface
-                        .withAlpha(140),
-                    fontSize: 11,
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// No longer used
 
 // Helper widget for sketch-style confidence meter
 class _SketchConfidenceMeter extends StatelessWidget {
@@ -1374,6 +1283,63 @@ class _ImpactRow extends StatelessWidget {
                   fontWeight: FontWeight.normal,
                 ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _UserLevelCard extends StatelessWidget {
+  const _UserLevelCard({required this.weeklyCount});
+
+  final int weeklyCount;
+
+  String _getLevel() {
+    if (weeklyCount < 5) return 'Scrap Scout';
+    if (weeklyCount < 15) return 'Scrap Saver';
+    return 'Scrap Savant';
+  }
+
+  String _getTip() {
+    if (weeklyCount < 5) return 'Keep scanning to unlock tips.';
+    if (weeklyCount < 15) return 'You\'re making a difference! Try scanning different types of scraps.';
+    return 'You\'re a scrap expert! Share your tips with friends.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final level = _getLevel();
+    final tip = _getTip();
+    final color = weeklyCount < 5
+        ? Theme.of(context).colorScheme.primary
+        : weeklyCount < 15
+            ? Theme.of(context).colorScheme.secondary
+            : Theme.of(context).colorScheme.tertiary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.person_outline, color: color, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              'You\'re a $level!',
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          tip,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+                height: 1.4,
+              ),
         ),
       ],
     );

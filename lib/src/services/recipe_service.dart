@@ -384,31 +384,32 @@ class RecipeService {
     final keywordMatches = recipe.keywords.intersection(labels).length;
     final diversityBoost = (labels.length.clamp(0, 6)) * 0.2;
 
-    return (tagMatches * 2.0) + (keywordMatches * 1.0) + diversityBoost;
+    // Prioritize recipes that directly use available scraps
+    return (tagMatches * 2.0) + (keywordMatches * 1.5) + diversityBoost;
   }
 
-  String _buildMatchReason(
-    _RecipeProfile recipe,
-    Set<String> labels,
-    Set<String> tags,
-  ) {
-    final tagMatches = recipe.tags.intersection(tags);
-    final keywordMatches = recipe.keywords.intersection(labels);
+String _buildMatchReason(
+  _RecipeProfile recipe,
+  Set<String> labels,
+  Set<String> tags,
+) {
+  final tagMatches = recipe.tags.intersection(tags);
+  final keywordMatches = recipe.keywords.intersection(labels);
 
-    if (tagMatches.isEmpty && keywordMatches.isEmpty) {
-      return 'A versatile recipe that works well with mixed scraps.';
-    }
-
-    final reasons = <String>[];
-    if (keywordMatches.isNotEmpty) {
-      reasons.add('Matches ${keywordMatches.take(3).join(', ')} in your scraps');
-    }
-    if (tagMatches.isNotEmpty) {
-      reasons.add('Fits ${tagMatches.take(2).join(' & ')} style cooking');
-    }
-
-    return reasons.join(' • ');
+  if (tagMatches.isEmpty && keywordMatches.isEmpty) {
+    return 'A versatile recipe that works well with mixed scraps.';
   }
+
+  final reasons = <String>[];
+  if (keywordMatches.isNotEmpty) {
+    reasons.add('Uses ${keywordMatches.take(3).join(', ')} from your bin');
+  }
+  if (tagMatches.isNotEmpty) {
+    reasons.add('Fits ${tagMatches.take(2).join(' & ')} style cooking');
+  }
+
+  return reasons.join(' • ');
+}
 }
 
 class _RecipeProfile {
