@@ -362,14 +362,22 @@ class AppState extends ChangeNotifier {
       // Listen to auth state changes with a timeout
       final Completer<void> authCompleter = Completer<void>();
       _authService.authStateChanges.listen((user) {
-        // Complete the completer regardless of whether user is null or not
-        // This ensures we don't wait indefinitely
-        authCompleter.complete();
+        // Complete the completer only once on first auth state change
+        if (!authCompleter.isCompleted) {
+          authCompleter.complete();
+        }
         if (user != null) {
           // Load data asynchronously without blocking app startup
           _reloadSavedRecipes();
           // Set up real-time listener for scraps
           _setupScrapListener(user.uid);
+        } else {
+          // User signed out - clear listener and data
+          _scrapSubscription?.cancel();
+          _scrapSubscription = null;
+          _inventory.clear();
+          _savedRecipes.clear();
+          notifyListeners();
         }
       });
       
@@ -445,9 +453,15 @@ class AppState extends ChangeNotifier {
     // Cancel any existing subscription
     _scrapSubscription?.cancel();
     _scrapSubscription = _scrapStore.watchScraps(userId).listen((scraps) {
-      _inventory
-        ..clear()
-        ..addAll(scraps);
+      // Update inventory based on remote data. If the snapshot is empty, clear the local inventory.
+      if (scraps.isNotEmpty) {
+        _inventory
+          ..clear()
+          ..addAll(scraps);
+      } else {
+        // Clear local inventory when no scraps are present in Firestore.
+        _inventory.clear();
+      }
       notifyListeners();
     }, onError: (e) {
       print('Error watching scraps: $e');
@@ -499,7 +513,8 @@ class AppState extends ChangeNotifier {
       }
     }
     
-    print('[_logItem] Adding item: label="$label", source="$source", confidence=$confidence, manualCorrection=$manualCorrection');
+    // Added logging for debugging UI layout issues
+    debugPrint('[_logItem] Adding item: label="$label", source="$source", confidence=$confidence, manualCorrection=$manualCorrection');
     
     final scrap = ScrapItem(
       label: label,

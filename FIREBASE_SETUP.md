@@ -72,6 +72,10 @@ service cloud.firestore {
       match /savedRecipes/{recipeId} {
         allow read, write: if request.auth.uid == userId;
       }
+      
+      match /scraps/{scrapId} {
+        allow read, write: if request.auth.uid == userId;
+      }
     }
   }
 }

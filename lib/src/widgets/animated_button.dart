@@ -131,7 +131,7 @@ class _AnimatedButtonState extends State<AnimatedButton>
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(widget.borderRadius),
                 child: Stack(
-                  fit: StackFit.expand,
+                  fit: StackFit.passthrough,
                   children: [
                     // Ripple effect
                     child!,

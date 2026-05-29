@@ -37,6 +37,12 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
       recipeService: RecipeService(),
     );
     debugPrint('[App] appState created');
+    // Listen to appState changes to trigger rebuild
+    appState.addListener(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   Future<void> _loadPreferences() async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models.dart';
 import '../state/app_state.dart';
@@ -79,12 +80,25 @@ class _HomeScreenState extends State<HomeScreen>
     // Manual verification removed; proceed as saved.
 
     final label = outcome.predictedLabel;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Logged $label — tap Find Recipes for ideas.'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    
+    // Check if item was actually added to inventory
+    final wasAdded = widget.appState.inventory.any((item) => item.label == label);
+    
+    if (wasAdded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Logged $label — tap Find Recipes for ideas.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to log $label. Please try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _openSettings() {
@@ -205,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen>
                 children: <Widget>[
                   Container(
                     padding: const EdgeInsets.all(UIConstants.kVerticalGap),
-                    child: _ScanTab(outcome: outcome, itemsLogged: itemsLogged, weeklyScanCount: widget.appState.weeklyScanCount),
+                    child: _ScanTab(appState: widget.appState, outcome: outcome, itemsLogged: itemsLogged, weeklyScanCount: widget.appState.weeklyScanCount),
                   ),
                   Container(
                     padding: const EdgeInsets.all(UIConstants.kVerticalGap),
@@ -266,12 +280,13 @@ class _HeroHeader extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         'Turn scraps into suppers',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme
                                   .onSurface
-                                  .withAlpha(140),
+                                  .withAlpha(160),
                               fontStyle: FontStyle.normal,
-                              fontSize: 14,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
                             ),
                       ),
                     ],
@@ -405,8 +420,9 @@ class _ActionPanel extends StatelessWidget {
 }
 
 class _ScanTab extends StatelessWidget {
-  const _ScanTab({required this.outcome, required this.itemsLogged, required this.weeklyScanCount});
+  const _ScanTab({required this.appState, required this.outcome, required this.itemsLogged, required this.weeklyScanCount});
 
+  final AppState appState;
   final ScanOutcome? outcome;
   final int itemsLogged;
   final int weeklyScanCount;
@@ -416,19 +432,25 @@ class _ScanTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       children: <Widget>[
-        _SectionCard(
-          title: 'Your Level',
-          subtitle: 'Based on weekly activity',
-          child: _UserLevelCard(
-            weeklyCount: weeklyScanCount,
-          ),
-        ),
-        const SizedBox(height: 14),
-        if (outcome != null) ...<Widget>[
-          _LatestScanCard(outcome: outcome!),
-          const SizedBox(height: 14),
-        ],
         _ImpactLedger(itemsLogged: itemsLogged),
+        const SizedBox(height: 20),
+        Divider(
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          thickness: 1,
+          indent: 0,
+          endIndent: 0,
+        ),
+        const SizedBox(height: 16),
+        // Visual separation
+        Divider(
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          thickness: 1,
+          indent: 0,
+          endIndent: 0,
+        ),
+        const SizedBox(height: 16),
+        // Extract recipe suggestions to separate widget
+        _RecipeSuggestionsSection(appState: appState),
       ],
     );
   }
@@ -616,7 +638,7 @@ class _InventoryTabState extends State<_InventoryTab> {
               ],
             ),
           ),
-        Expanded(
+        Flexible(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             children: <Widget>[
@@ -1289,59 +1311,57 @@ class _ImpactRow extends StatelessWidget {
   }
 }
 
-class _UserLevelCard extends StatelessWidget {
-  const _UserLevelCard({required this.weeklyCount});
+class _RecipeSuggestionsSection extends StatelessWidget {
+  const _RecipeSuggestionsSection({required this.appState});
 
-  final int weeklyCount;
-
-  String _getLevel() {
-    if (weeklyCount < 5) return 'Scrap Scout';
-    if (weeklyCount < 15) return 'Scrap Saver';
-    return 'Scrap Savant';
-  }
-
-  String _getTip() {
-    if (weeklyCount < 5) return 'Keep scanning to unlock tips.';
-    if (weeklyCount < 15) return 'You\'re making a difference! Try scanning different types of scraps.';
-    return 'You\'re a scrap expert! Share your tips with friends.';
-  }
+  final AppState appState;
 
   @override
   Widget build(BuildContext context) {
-    final level = _getLevel();
-    final tip = _getTip();
-    final color = weeklyCount < 5
-        ? Theme.of(context).colorScheme.primary
-        : weeklyCount < 15
-            ? Theme.of(context).colorScheme.secondary
-            : Theme.of(context).colorScheme.tertiary;
+    final recipeSuggestions = appState.activeRecipeSuggestions;
+    
+    if (recipeSuggestions.isEmpty) {
+      return _SectionCard(
+        title: 'Recipe Ideas',
+        subtitle: 'Scan some food scraps to get recipe suggestions!',
+        child: const Text(
+          'No scraps scanned yet. Use the camera to scan your first food scrap and get recipe ideas.',
+        ),
+      );
+    }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.person_outline, color: color, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              'You\'re a $level!',
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+    return _SectionCard(
+      title: 'Recipe Ideas',
+      subtitle: 'Based on your scanned scraps',
+      child: Column(
+        children: [
+          ...recipeSuggestions.take(3).map((recipe) => Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _RecipeTile(recipe: recipe),
+          )),
+          if (recipeSuggestions.length > 3)
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => RecipeListScreen(
+                      appState: appState,
+                      labels: appState.inventory.map((item) => item.label).toList(),
+                    ),
+                  ),
+                );
+              },
+              child: Text(
+                'View all ${recipeSuggestions.length} recipes',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          tip,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-                height: 1.4,
-              ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
+

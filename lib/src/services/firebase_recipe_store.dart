@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 
 import '../models.dart';
@@ -8,10 +9,35 @@ class FirebaseRecipeStore {
   static const String _recipesSubcollection = 'savedRecipes';
 
   final _firestore = FirebaseFirestore.instance;
+  final _auth = FirebaseAuth.instance;
+
+  /// Initialize user document with basic data
+  Future<void> _initializeUserDocument(String userId) async {
+    try {
+      final userDocRef = _firestore.collection(_usersCollection).doc(userId);
+      final userDoc = await userDocRef.get();
+      
+      // Only initialize if the document doesn't exist or has no fields
+      if (!userDoc.exists || userDoc.data() == null) {
+        await userDocRef.set({
+          'createdAt': FieldValue.serverTimestamp(),
+          'email': _auth.currentUser?.email ?? 'anonymous',
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+        print('User document initialized for: $userId');
+      }
+    } catch (e) {
+      print('Failed to initialize user document: $e');
+      // Don't throw - we want to continue even if initialization fails
+    }
+  }
 
   /// Save or update a recipe for the current user
   Future<void> upsertRecipe(String userId, SavedRecipeRecord record) async {
     try {
+      // Initialize user document first to avoid orphaned subcollection
+      await _initializeUserDocument(userId);
+      
       await _firestore
           .collection(_usersCollection)
           .doc(userId)
@@ -26,6 +52,9 @@ class FirebaseRecipeStore {
   /// Load all saved recipes for a user
   Future<List<SavedRecipeRecord>> loadRecipes(String userId) async {
     try {
+      // Initialize user document first to ensure it exists
+      await _initializeUserDocument(userId);
+      
       final snapshot = await _firestore
           .collection(_usersCollection)
           .doc(userId)
