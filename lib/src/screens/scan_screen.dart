@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../state/app_state.dart';
-import '../theme/app_theme.dart';
 import '../constants/ui_constants.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -71,31 +70,65 @@ class _ScanScreenState extends State<ScanScreen> {
     }
 
   String? _parseDetectedLabel(String result) {
-    if (result.startsWith('Error:')) {
-      return null;
-    }
-    if (result.contains('overloaded') || result.contains('not available')) {
-      return null;
-    }
-
     try {
-      final jsonResult = jsonDecode(result) as Map<String, dynamic>;
-      final foodScraps = jsonResult['food_scraps'];
-      if (foodScraps is! List || foodScraps.isEmpty) {
+      final payload = _parseQwenPayload(result);
+      if (payload == null) {
         return null;
       }
-      final first = foodScraps.first;
-      if (first is! Map) {
+
+      final label = payload['label']?.toString().trim();
+      if (label == null || label.isEmpty) {
         return null;
       }
-      final item = first['item'];
-      if (item is! String || item.trim().isEmpty) {
-        return null;
-      }
-      return item.trim();
-    } catch (_) {
+
+      return label;
+    } catch (e) {
+      debugPrint('Error parsing API response: $e');
       return null;
     }
+  }
+
+  Map<String, dynamic>? _parseQwenPayload(String responseText) {
+    try {
+      final decoded = jsonDecode(responseText);
+      if (decoded is Map<String, dynamic> && decoded['error'] != null) {
+        debugPrint('Classifier API error: ${decoded['error']}');
+        return null;
+      }
+
+      String? generatedText;
+      if (decoded is List && decoded.isNotEmpty) {
+        final first = decoded.first;
+        if (first is Map<String, dynamic>) {
+          generatedText = first['generated_text']?.toString();
+        }
+      } else if (decoded is Map<String, dynamic>) {
+        generatedText = decoded['generated_text']?.toString();
+      }
+
+      final candidate = generatedText ?? responseText;
+      final jsonBlock = _extractJsonBlock(candidate);
+      if (jsonBlock == null) {
+        return null;
+      }
+
+      final parsed = jsonDecode(jsonBlock);
+      if (parsed is Map<String, dynamic>) {
+        return parsed;
+      }
+    } catch (e) {
+      debugPrint('Error parsing Qwen response: $e');
+    }
+    return null;
+  }
+
+  String? _extractJsonBlock(String text) {
+    final start = text.indexOf('{');
+    final end = text.lastIndexOf('}');
+    if (start == -1 || end == -1 || end <= start) {
+      return null;
+    }
+    return text.substring(start, end + 1);
   }
 
   Future<void> _showDetectionResultDialog(String predictedLabel) async {
@@ -244,10 +277,9 @@ class _ScanScreenState extends State<ScanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
-    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
-    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
+    final bgColor = UIConstants.kBackground;
+    final cardColor = UIConstants.kSurface;
+    final textColor = UIConstants.kText;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -310,10 +342,9 @@ class _CameraOptions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
-    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
-    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
+    final bgColor = UIConstants.kBackground;
+    final cardColor = UIConstants.kSurface;
+    final textColor = UIConstants.kText;
 
     return Container(
       decoration: BoxDecoration(
@@ -500,9 +531,8 @@ class _ImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
-    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
+    final cardColor = UIConstants.kSurface;
+    final textColor = UIConstants.kText;
 
     return Stack(
       fit: StackFit.expand,
@@ -820,9 +850,8 @@ class _ManualLabelSheetState extends State<_ManualLabelSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
-    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
+    final cardColor = UIConstants.kSurface;
+    final textColor = UIConstants.kText;
 
     return SafeArea(
       child: Container(

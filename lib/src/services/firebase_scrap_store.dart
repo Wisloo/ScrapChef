@@ -41,7 +41,7 @@ class FirebaseScrapStore {
       // Use a deterministic document ID to avoid duplicates and enable later deletion.
       // Combine label and timestamp to ensure uniqueness per scan.
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final docId = '${scrap.label}_$timestamp';
+      final docId = scrap.id ?? '${scrap.label}_$timestamp';
       final docRef = _firestore
         .collection(_usersCollection)
         .doc(userId)
@@ -72,7 +72,7 @@ class FirebaseScrapStore {
 
       print('Loaded ${snapshot.docs.length} scraps');
       return snapshot.docs
-        .map((doc) => ScrapItem.fromJson(doc.data()))
+        .map((doc) => ScrapItem.fromJson(doc.data(), id: doc.id))
         .toList();
     } catch (e) {
       print('Failed to load scraps: $e');
@@ -90,7 +90,7 @@ class FirebaseScrapStore {
       .orderBy('loggedAt', descending: true)
       .snapshots()
       .map((snapshot) => snapshot.docs
-        .map((doc) => ScrapItem.fromJson(doc.data()))
+        .map((doc) => ScrapItem.fromJson(doc.data(), id: doc.id))
         .toList());
   }
 

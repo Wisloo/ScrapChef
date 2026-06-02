@@ -1,109 +1,61 @@
+import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:developer';
+import 'package:http/http.dart' as http;
+import 'package:logging/logging.dart';
 
-import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:image/image.dart' as img;
+class QwenService {
+  final String backendUrl;
+  final Logger _logger = Logger('QwenService');
 
-class GeminiService {
-  late final GenerativeModel _model;
+  QwenService(this.backendUrl);
 
-   static const String _prompt =
-       'Identify food scraps in this image. Reply with ONLY valid JSON, no markdown: '
-       '{"food_scraps":[{"item":"<scrap name>"}]}. '
-       'Use short common names (e.g. orange peels, banana peels, coffee grounds). '
-       'If none, use {"food_scraps":[]}.';
+  Future<String> analyzeFoodScraps(String imagePath) async {
+    try {
+      final uri = Uri.parse('$backendUrl/classify-food-scrap');
+      final imageFile = File(imagePath);
+      
+      final request = http.MultipartRequest('POST', uri);
+      request.files.add(await http.MultipartFile.fromPath('image', imagePath));
+      
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
 
-   GeminiService({String? apiKey}) {
-     final key = apiKey ?? 'AIzaSyDagI2DoJllJumvfV2pZWYuJNwoFrw381A';
-     print('Gemini API key configured: ${key.isNotEmpty ? key.substring(0, key.length > 10 ? 10 : key.length) : 'empty'}...');
-     _model = GenerativeModel(
-       model: 'gemini-2.5-flash',
-       apiKey: key,
-     );
-   }
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(responseBody);
+        if (decoded['classification'] != null) {
+          final classification = decoded['classification'];
+          return jsonEncode({
+            'label': classification['label'],
+            'confidence': classification['confidence']
+          });
+        }
+      }
 
-   Future<Uint8List> _prepareImageBytes(String imagePath) async {
-     final rawBytes = await File(imagePath).readAsBytes();
-     final decoded = img.decodeImage(rawBytes);
-     if (decoded == null) {
-       return rawBytes;
-     }
+      _logger.warning('Backend classification failed: ${response.statusCode} - $responseBody');
+      return 'Error: ${_extractError(responseBody) ?? response.reasonPhrase}';
+    } catch (e) {
+      _logger.severe('Backend classification error: $e');
+      return 'Error: $e';
+    }
+  }
 
-     const maxEdge = 1024;
-     final resized = decoded.width > maxEdge || decoded.height > maxEdge
-         ? img.copyResize(
-             decoded,
-             width: decoded.width >= decoded.height ? maxEdge : null,
-             height: decoded.height > decoded.width ? maxEdge : null,
-           )
-         : decoded;
+  String _buildPrompt() {
+    return (
+        'Classify the food scrap in the image. '
+        'Return ONLY a JSON object with keys: label, confidence. '
+        'Use a short scrap-specific noun phrase (examples: "banana peel", "onion skin", "apple core", "carrot tops"). '
+        'Confidence must be a number between 0 and 1. '
+        'If unsure, return label "unknown scrap" with low confidence.'
+    );
+  }
 
-     return Uint8List.fromList(img.encodeJpg(resized, quality: 80));
-   }
-
-   bool _isNonRetryableError(Object e) {
-     final message = e.toString().toLowerCase();
-     return message.contains('api key') ||
-         message.contains('api_key') ||
-         message.contains('permission') ||
-         message.contains('invalid') ||
-         message.contains('quota');
-   }
-
-   Future<String> analyzeFoodScraps(String imagePath) async {
-     final imageFile = File(imagePath);
-     if (!imageFile.existsSync()) {
-       return 'Error: Image file not found at $imagePath';
-     }
-
-     late final Uint8List imageBytes;
-     try {
-       imageBytes = await _prepareImageBytes(imagePath);
-     } catch (e) {
-       return 'Error: Could not process image: $e';
-     }
-
-     final content = [
-       Content.multi([
-         TextPart(_prompt),
-         DataPart('image/jpeg', imageBytes),
-       ]),
-     ];
-
-     const maxAttempts = 2;
-     var delay = const Duration(milliseconds: 500);
-
-     for (var attempt = 0; attempt < maxAttempts; attempt++) {
-       try {
-         final response = await _model.generateContent(content);
-         final text = response.text ?? 'No analysis found.';
-
-         final jsonPattern = RegExp(r'```json\s*([\s\S]*?)\s*```');
-         final match = jsonPattern.firstMatch(text);
-
-         if (match != null) {
-           return match.group(1) ?? text;
-         }
-
-         return text;
-       } catch (e) {
-         if (_isNonRetryableError(e) || attempt == maxAttempts - 1) {
-           if (e.toString().contains('resource_exhausted') ||
-               e.toString().contains('model provider')) {
-             return 'Error: Gemini API is currently overloaded. Please try again in a few moments.';
-           }
-           if (e.toString().contains('API key')) {
-             return 'Error: Invalid API key. Please check your Gemini API key configuration.';
-           }
-           return 'Error during API call: $e';
-         }
-
-         await Future.delayed(delay);
-         delay *= 2;
-       }
-     }
-
-     return 'Error: Failed after $maxAttempts attempts';
-   }
+  String? _extractError(String responseBody) {
+    try {
+      final decoded = jsonDecode(responseBody);
+      if (decoded is Map<String, dynamic> && decoded['error'] != null) {
+        return decoded['error'].toString();
+      }
+    } catch (_) {}
+    return null;
+  }
 }

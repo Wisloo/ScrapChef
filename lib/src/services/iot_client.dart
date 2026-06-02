@@ -7,7 +7,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models.dart' as model;
 
 class IoTClient {
-  final String _apiEndpoint = 'http://localhost:3000/scrap-data';
+  final String _apiEndpoint = 'http://192.168.100.3:3000/scrap-data';
 
   Future<bool> isConnected() async {
     final connectivityResult = await Connectivity().checkConnectivity();

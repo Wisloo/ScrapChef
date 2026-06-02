@@ -7,7 +7,6 @@ import '../services/sound_service.dart';
 import 'scan_screen.dart';
 import 'settings_screen.dart';
 import 'recipe_list_screen.dart';
-import '../theme/app_theme.dart';
 import '../widgets/animated_button.dart' as animated;
 import '../widgets/app_card.dart';
 import '../widgets/app_button.dart';
@@ -17,13 +16,9 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.appState,
-    required this.onThemeChanged,
-    required this.isDarkMode,
   });
 
   final AppState appState;
-  final ValueChanged<bool> onThemeChanged;
-  final bool isDarkMode;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -107,8 +102,6 @@ class _HomeScreenState extends State<HomeScreen>
       MaterialPageRoute(
         builder: (_) => SettingsScreen(
           appState: widget.appState,
-          onThemeChanged: widget.onThemeChanged,
-          isDarkMode: widget.isDarkMode,
         ),
       ),
     );
@@ -441,16 +434,6 @@ class _ScanTab extends StatelessWidget {
           endIndent: 0,
         ),
         const SizedBox(height: 16),
-        // Visual separation
-        Divider(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-          thickness: 1,
-          indent: 0,
-          endIndent: 0,
-        ),
-        const SizedBox(height: 16),
-        // Extract recipe suggestions to separate widget
-        _RecipeSuggestionsSection(appState: appState),
       ],
     );
   }
@@ -476,12 +459,17 @@ class _InventoryTab extends StatefulWidget {
 class _InventoryTabState extends State<_InventoryTab> {
   final Set<String> _selectedItems = {};
 
-  void _toggleSelection(String label) {
+  String _itemKey(ScrapItem item) {
+    return item.id ?? '${item.label}_${item.loggedAt.millisecondsSinceEpoch}';
+  }
+
+  void _toggleSelection(ScrapItem item) {
+    final key = _itemKey(item);
     setState(() {
-      if (_selectedItems.contains(label)) {
-        _selectedItems.remove(label);
+      if (_selectedItems.contains(key)) {
+        _selectedItems.remove(key);
       } else {
-        _selectedItems.add(label);
+        _selectedItems.add(key);
       }
     });
   }
@@ -495,7 +483,11 @@ class _InventoryTabState extends State<_InventoryTab> {
   void _findRecipesForSelected() {
     if (_selectedItems.isNotEmpty) {
       SoundService.playClick();
-      widget.onOpenRecipes(_selectedItems.toList());
+      final labels = widget.items
+          .where((item) => _selectedItems.contains(_itemKey(item)))
+          .map((item) => item.label)
+          .toList();
+      widget.onOpenRecipes(labels);
     }
   }
 
@@ -505,6 +497,34 @@ class _InventoryTabState extends State<_InventoryTab> {
       final labels = widget.items.map((item) => item.label).toList();
       widget.onOpenRecipes(labels);
     }
+  }
+
+  void _deleteItem(ScrapItem item) {
+    final key = _itemKey(item);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Item?'),
+        content: Text('Remove "${item.label}" from your scrap bin?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              widget.appState.deleteItem(item);
+              _selectedItems.remove(key);
+              Navigator.pop(context);
+            },
+            child: const Text('Delete',
+                style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -527,7 +547,7 @@ class _InventoryTabState extends State<_InventoryTab> {
                   ),
                 ),
               ),
-              if (widget.items.isNotEmpty) ...[
+              if (widget.items.isNotEmpty && _selectedItems.isEmpty) ...[
                 TextButton(
                   onPressed: () {
                     showDialog(
@@ -657,8 +677,9 @@ class _InventoryTabState extends State<_InventoryTab> {
                               child: _InventoryTile(
                                 item: item,
                                 isSelected:
-                                    _selectedItems.contains(item.label),
-                                onTap: () => _toggleSelection(item.label),
+                                    _selectedItems.contains(_itemKey(item)),
+                                onTap: () => _toggleSelection(item),
+                                onDelete: () => _deleteItem(item),
                               ),
                             ))
                             .toList(),
@@ -929,11 +950,13 @@ class _InventoryTile extends StatelessWidget {
     required this.item,
     this.isSelected = false,
     this.onTap,
+    this.onDelete,
   });
 
   final ScrapItem item;
   final bool isSelected;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -1011,6 +1034,18 @@ class _InventoryTile extends StatelessWidget {
                 ],
               ),
             ),
+            if (onDelete != null)
+              GestureDetector(
+                onTap: onDelete,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.delete_outline,
+                    color: Theme.of(context).colorScheme.error.withOpacity(0.7),
+                    size: 20,
+                  ),
+                ),
+              ),
             Icon(
               item.manualCorrection ? Icons.edit : Icons.check_circle,
               color: item.manualCorrection

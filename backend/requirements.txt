@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+xgboost
+numpy
+pandas
+sentence-transformers
+torch
+transformers
+pillow
+huggingface_hub
+accelerate
+qwen-vl-utils
+openai

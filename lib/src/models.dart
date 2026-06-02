@@ -16,6 +16,7 @@ class ScanOutcome {
 
 class ScrapItem {
   const ScrapItem({
+    this.id,
     required this.label,
     this.weightGrams,
     required this.loggedAt,
@@ -24,6 +25,7 @@ class ScrapItem {
     this.manualCorrection = false,
   });
 
+  final String? id;
   final String label;
   final double? weightGrams;  // Optional: user can add weight manually
   final DateTime loggedAt;
@@ -33,6 +35,7 @@ class ScrapItem {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'label': label,
       'weightGrams': weightGrams,
       'loggedAt': loggedAt.toIso8601String(),
@@ -42,8 +45,9 @@ class ScrapItem {
     };
   }
 
-  factory ScrapItem.fromJson(Map<String, dynamic> json) {
+  factory ScrapItem.fromJson(Map<String, dynamic> json, {String? id}) {
     return ScrapItem(
+      id: id ?? json['id'] as String?,
       label: json['label'] as String? ?? '',
       weightGrams: json['weightGrams'] as double?,
       loggedAt: DateTime.tryParse(json['loggedAt'] as String? ?? '') ?? DateTime.now(),

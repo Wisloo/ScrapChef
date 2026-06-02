@@ -1,3 +1,9 @@
 {
-    "cmake.sourceDirectory": "C:/Users/Louis/Documents/GitHub/ScrapChef/linux"
+  "cmake.sourceDirectory": "C:/Users/Louis/Documents/GitHub/ScrapChef/linux",
+  "files.exclude": {
+    "**/vector_store": true
+  },
+  "search.exclude": {
+    "**/vector_store": true
+  }
 }

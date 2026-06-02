@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: scrapchef_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # Optional: add a placeholder for the Flutter web build (served via nginx)
+  # frontend:
+  #   image: nginx:alpine
+  #   container_name: scrapchef_frontend
+  #   ports:
+  #     - "8080:80"
+  #   volumes:
+  #     - ./frontend/build/web:/usr/share/nginx/html:ro

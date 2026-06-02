@@ -64,19 +64,6 @@ class UIConstants {
   static const Color kSuccess = Color(0xFFA8D5BA);          // Light green
   static const Color kMuted = Color(0xFF9A8B7E);            // Muted (from original theme)
 
-  // Color palette - Dark mode
-  static const Color kDarkBackground = Color(0xFF121212);   // Near black
-  static const Color kDarkSurface = Color(0xFF1E1E1E);       // Dark surface
-  static const Color kDarkSurfaceElevated = Color(0xFF2C251F); // Elevated dark surface
-  static const Color kDarkText = Color(0xFFE8DCCF);          // Light text on dark
-  static const Color kDarkTextLight = Color(0xFFB8AA9A);     // Secondary text
-  static const Color kDarkTextMuted = Color(0xFF666666);     // Muted text
-  static const Color kDarkDivider = Color(0xFF473D34);       // Dark divider
-  static const Color kDarkSuccess = Color(0xFF2E7D32);       // Dark mode success variant
-  static const Color kDarkAccent = Color(0xFF8A7A6C);        // Dark mode accent variant
-  static const Color kDarkSecondary = Color(0xFFD99A6F);     // Dark mode secondary variant
-  static const Color kErrorDark = Color(0xFFB71C1C);         // Dark mode error variant
-
   // Additional colors for improved UI
   static const Color kPrimaryDark = Color(0xFF5D4037);       // Modern Warm Brown (original)
   static const Color kSecondaryDark = Color(0xFFD9643E);     // Modern Terracotta Orange (original)

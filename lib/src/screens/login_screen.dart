@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../state/app_state.dart';
-import '../theme/app_theme.dart';
 import '../constants/ui_constants.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -73,12 +72,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final colors = theme.colorScheme;
     final textColor = colors.onSurface;
-    final subtleTextColor = isDark ? UIConstants.kDarkTextLight : UIConstants.kTextLight;
-    final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
-    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
+    final subtleTextColor = UIConstants.kTextLight;
+    final bgColor = UIConstants.kBackground;
+    final cardColor = UIConstants.kSurface;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -87,9 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: isDark
-                ? [UIConstants.kDarkBackground, UIConstants.kDarkSurface]
-                : [const Color(0xFFF7F0E6), bgColor],
+            colors: [const Color(0xFFF7F0E6), bgColor],
           ),
         ),
         child: SafeArea(
@@ -103,10 +99,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: BoxDecoration(
                     color: cardColor,
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: isDark ? UIConstants.kDarkDivider : UIConstants.kDivider),
+                    border: Border.all(color: UIConstants.kDivider),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withAlpha(isDark ? 60 : 12),
+                        color: Colors.black.withAlpha(12),
                         blurRadius: 36,
                         offset: const Offset(0, 14),
                       ),
@@ -225,9 +221,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? UIConstants.kDarkSurfaceElevated : const Color(0xFFF6EFE6),
+                          color: const Color(0xFFF6EFE6),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isDark ? UIConstants.kDarkDivider : UIConstants.kDivider),
+                          border: Border.all(color: UIConstants.kDivider),
                         ),
                         child: Text(
                           'We use Firebase to keep your recipes and preferences synced across devices.',

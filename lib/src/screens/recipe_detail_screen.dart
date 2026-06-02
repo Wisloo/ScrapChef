@@ -1,24 +1,39 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models.dart';
 import '../state/app_state.dart';
 import '../constants/ui_constants.dart';
+import '../services/recipe_service.dart';
 
-class RecipeDetailScreen extends StatelessWidget {
+class RecipeDetailScreen extends StatefulWidget {
   const RecipeDetailScreen({super.key, required this.recipe, required this.appState});
 
   final RecipeSuggestion recipe;
   final AppState appState;
 
   @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
-    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
-    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
+  State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
+}
 
-    final isSaved = appState.isRecipeSaved(recipe);
+class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
+  late Future<List<RecipeSuggestion>> _recommendationsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _recommendationsFuture = widget.appState.recipeService.suggestForLabels(widget.recipe.ingredients);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColor = UIConstants.kBackground;
+    final cardColor = UIConstants.kSurface;
+    final textColor = UIConstants.kText;
+
+    final isSaved = widget.appState.isRecipeSaved(widget.recipe);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -30,7 +45,7 @@ class RecipeDetailScreen extends StatelessWidget {
             backgroundColor: UIConstants.kPrimary,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                recipe.title,
+                widget.recipe.title,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
@@ -61,10 +76,10 @@ class RecipeDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _MatchBadge(matchReason: recipe.matchReason),
+                  _MatchBadge(matchReason: widget.recipe.matchReason),
                   const SizedBox(height: 24),
                   Text(
-                    recipe.summary,
+                    widget.recipe.summary,
                     style: TextStyle(
                       fontSize: 16,
                       color: textColor.withAlpha(180),
@@ -93,7 +108,7 @@ class RecipeDetailScreen extends StatelessWidget {
                       ],
                     ),
                     child: Column(
-                      children: recipe.ingredients.map((ingredient) {
+                      children: widget.recipe.ingredients.map((ingredient) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Row(
@@ -154,7 +169,7 @@ class RecipeDetailScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (recipe.chefNote != null) ...[
+                  if (widget.recipe.chefNote != null) ...[
                     const SizedBox(height: 28),
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -184,7 +199,7 @@ class RecipeDetailScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            recipe.chefNote!,
+                            widget.recipe.chefNote!,
                             style: TextStyle(
                               fontSize: 15,
                               color: textColor.withAlpha(160),
@@ -196,6 +211,23 @@ class RecipeDetailScreen extends StatelessWidget {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 28),
+                  FutureBuilder<List<RecipeSuggestion>>(
+                    future: _recommendationsFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Text('No recommendations found', style: TextStyle(color: textColor.withAlpha(120)));
+                      }
+                      return _RecommendationSection(
+                        recommendations: snapshot.data!,
+                        cardColor: cardColor,
+                        textColor: textColor,
+                      );
+                    },
+                  ),
                   const SizedBox(height: 32),
                   Row(
                     children: [
@@ -206,19 +238,18 @@ class RecipeDetailScreen extends StatelessWidget {
                           color: isSaved ? UIConstants.kSecondary : textColor,
                           cardColor: cardColor,
                           onTap: () async {
-                            // HapticFeedback removed
-                            if (!appState.isSignedIn) {
+                            if (!widget.appState.isSignedIn) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Sign in to save recipes.')),
                               );
                               return;
                             }
 
-                            await appState.toggleSavedRecipe(recipe);
+                            await widget.appState.toggleSavedRecipe(widget.recipe);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(appState.isRecipeSaved(recipe) ? 'Recipe saved!' : 'Recipe removed.'),
+                                  content: Text(widget.appState.isRecipeSaved(widget.recipe) ? 'Recipe saved!' : 'Recipe removed.'),
                                   backgroundColor: UIConstants.kSecondary,
                                 ),
                               );
@@ -234,24 +265,23 @@ class RecipeDetailScreen extends StatelessWidget {
                           color: UIConstants.kPrimary,
                           cardColor: cardColor,
                           onTap: () async {
-                            // HapticFeedback removed
-                            if (!appState.isSignedIn) {
+                            if (!widget.appState.isSignedIn) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Sign in to add notes.')),
                               );
                               return;
                             }
 
-                            final existing = appState.savedRecipes.firstWhere(
-                              (saved) => saved.recipeId == recipe.stableId,
+                            final existing = widget.appState.savedRecipes.firstWhere(
+                              (saved) => saved.recipeId == widget.recipe.stableId,
                               orElse: () => SavedRecipeRecord(
-                                recipeId: recipe.stableId,
-                                title: recipe.title,
-                                summary: recipe.summary,
-                                ingredients: recipe.ingredients,
-                                matchReason: recipe.matchReason,
+                                recipeId: widget.recipe.stableId,
+                                title: widget.recipe.title,
+                                summary: widget.recipe.summary,
+                                ingredients: widget.recipe.ingredients,
+                                matchReason: widget.recipe.matchReason,
                                 savedAt: DateTime.now(),
-                                chefNote: recipe.chefNote,
+                                chefNote: widget.recipe.chefNote,
                               ),
                             );
                             final controller = TextEditingController(text: existing.userNotes ?? '');
@@ -319,12 +349,12 @@ class RecipeDetailScreen extends StatelessWidget {
                             );
 
                             if (note != null) {
-                              if (!appState.isRecipeSaved(recipe)) {
-                                await appState.toggleSavedRecipe(
-                                    recipe, notes: note.isEmpty ? null : note);
+                              if (!widget.appState.isRecipeSaved(widget.recipe)) {
+                                await widget.appState.toggleSavedRecipe(
+                                    widget.recipe, notes: note.isEmpty ? null : note);
                               } else if (note.isNotEmpty) {
-                                await appState.updateSavedRecipeNotes(
-                                    recipe.stableId, note);
+                                await widget.appState.updateSavedRecipeNotes(
+                                    widget.recipe.stableId, note);
                               }
                             }
                           },
@@ -354,6 +384,87 @@ class RecipeDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecommendationSection extends StatelessWidget {
+  const _RecommendationSection({
+    required this.recommendations,
+    required this.cardColor,
+    required this.textColor,
+  });
+
+  final List<RecipeSuggestion> recommendations;
+  final Color cardColor;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: textColor.withAlpha(10),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Recommended Recipes',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: min(recommendations.length, 5),
+            itemBuilder: (context, index) {
+              final rec = recommendations[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      rec.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      rec.summary,
+                      style: TextStyle(
+                        color: textColor.withAlpha(160),
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _MatchBadge(matchReason: rec.matchReason),
+                  ],
+                ),
+              );
+            },
+            separatorBuilder: (context, index) {
+              return Divider(height: 1, color: textColor.withAlpha(80));
+            },
           ),
         ],
       ),
@@ -434,9 +545,6 @@ class _Step extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
@@ -462,7 +570,7 @@ class _Step extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 15, color: textColor.withAlpha(170), height: 1.5),
+              style: TextStyle(fontSize: 15, color: UIConstants.kText.withAlpha(170), height: 1.5),
             ),
           ),
         ],
@@ -488,8 +596,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
+    final textColor = UIConstants.kText;
 
     return GestureDetector(
       onTap: onTap,

@@ -11,13 +11,6 @@ const Color kText = Color(0xFF4A3F35); // Dark earth brown
 const Color kTextLight = Color(0xFF6B5D52); // Medium earth brown
 const Color kDivider = Color(0xFFE0D5C5); // Light beige
 
-// Dark theme colors (earthy dark mode)
-const Color kDarkBackground = Color(0xFF2A2520); // Dark earth brown
-const Color kDarkSurface = Color(0xFF3A3530); // Dark brown surface
-const Color kDarkText = Color(0xFFE8E0D8); // Light cream text
-const Color kDarkTextLight = Color(0xFFB8B0A8); // Medium cream text
-const Color kDarkDivider = Color(0xFF4A4540); // Dark divider
-
 // Vegetable-specific colors (kept for mascot designs)
 const Color kCarrotOrange = Color(0xFFFF8C42);
 const Color kTomatoRed = Color(0xFFE85D4E);
@@ -33,9 +26,8 @@ class VeggieMascot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? kDarkSurface : kSurface;
-    final textColor = isDark ? kDarkText : kText;
+    final bgColor = kSurface;
+    final textColor = kText;
 
     return Container(
       width: size,
@@ -518,9 +510,8 @@ class EmptyStateWithMascot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? kDarkSurface : kSurface;
-    final textColor = isDark ? kDarkText : kText;
+    final cardColor = kSurface;
+    final textColor = kText;
 
     return Center(
       child: Container(

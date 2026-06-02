@@ -41,8 +41,19 @@ app.*.map.json
 
 # Local API keys (use dart_defines.json — see FIREBASE_SETUP.md)
 dart_defines.json
+secrets.json
+.env
+*.env
+config/secrets.json
+lib/config/secrets.dart
+scrapchef-498110-72b4c8e9ccae.json
+serviceAccountKey.json
+
+# Ngrok configuration with auth token
+ngrok.yml
 
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
 /android/app/release
+vector_store/

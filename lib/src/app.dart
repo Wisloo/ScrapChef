@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'services/gemini_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import 'services/gemini_service.dart' show QwenService;
 import 'services/recipe_service.dart';
 import 'services/preferences_service.dart';
 import 'services/sound_service.dart';
@@ -21,7 +23,6 @@ class ScrapChefApp extends StatefulWidget {
 
 class _ScrapChefAppState extends State<ScrapChefApp> {
   late final AppState appState;
-  bool isDarkMode = false;
   bool _preferencesLoaded = false;
 
   @override
@@ -30,13 +31,12 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
     super.initState();
     _loadPreferences();
     debugPrint('[App] Creating appState');
+    final backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://localhost:8000';
     appState = AppState(
-      classifierService: GeminiService(
-        apiKey: 'AIzaSyDagI2DoJllJumvfV2pZWYuJNwoFrw381A',
-      ),
+      classifierService: QwenService(backendUrl),
       recipeService: RecipeService(),
     );
-    debugPrint('[App] appState created');
+    debugPrint('[App] appState created with backend URL: $backendUrl');
     // Listen to appState changes to trigger rebuild
     appState.addListener(() {
       if (mounted) {
@@ -50,7 +50,6 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
     await PreferencesService.loadPreferences();
     await SoundService.init();
     setState(() {
-      isDarkMode = PreferencesService.isDarkMode;
       _preferencesLoaded = true;
     });
     debugPrint('[App] Preferences loaded');
@@ -86,22 +85,12 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
       debugPrint('[App] User signed in, showing HomeScreen');
       startScreen = HomeScreen(
         appState: appState,
-        isDarkMode: isDarkMode,
-        onThemeChanged: (value) async {
-          setState(() => isDarkMode = value);
-          await PreferencesService.setDarkMode(value);
-        },
       );
     } else if (appState.authFailed) {
       debugPrint('[App] Auth failed, showing HomeScreen in guest mode');
       // If auth failed, show home screen in guest mode
       startScreen = HomeScreen(
         appState: appState,
-        isDarkMode: isDarkMode,
-        onThemeChanged: (value) async {
-          setState(() => isDarkMode = value);
-          await PreferencesService.setDarkMode(value);
-        },
       );
     } else {
       debugPrint('[App] Not signed in, showing LoginScreen');
@@ -112,8 +101,6 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
       debugShowCheckedModeBanner: false,
       title: 'ScrapChef',
       theme: buildLightTheme(),
-      darkTheme: buildDarkTheme(),
-      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: startScreen,
     );
   }

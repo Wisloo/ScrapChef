@@ -21,6 +21,8 @@ dependencies:
   google_generative_ai: ^0.4.7
   http: ^1.2.0
   shared_preferences: ^2.2.2
+  flutter_dotenv: ^6.0.1
+  tflite_flutter: ^0.12.1
 
 dev_dependencies:
   flutter_test:
@@ -31,3 +33,4 @@ flutter:
   uses-material-design: true
   assets:
     - lib/image/ScrapChefLogo.jpg
+    - .env

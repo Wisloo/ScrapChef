@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
 import '../constants/ui_constants.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -84,9 +83,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
-    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
+    final bgColor = UIConstants.kBackground;
+    final textColor = UIConstants.kText;
 
     return Scaffold(
       backgroundColor: bgColor,

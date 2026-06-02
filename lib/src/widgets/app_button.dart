@@ -33,13 +33,12 @@ class _AppButtonState extends State<AppButton> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     // Default gradient: primary to secondary
     final Gradient defaultGradient = LinearGradient(
       colors: [
-        isDarkMode ? colorScheme.primary : colorScheme.primary,
-        isDarkMode ? colorScheme.secondary : colorScheme.secondary,
+        colorScheme.primary,
+        colorScheme.secondary,
       ],
     );
 

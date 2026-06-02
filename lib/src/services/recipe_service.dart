@@ -1,5 +1,8 @@
 import '../models.dart';
 import 'mealdb_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:async';
+import 'dart:convert';
 
 class RecipeService {
   RecipeService();
@@ -27,6 +30,87 @@ class RecipeService {
     'Mixed fruit scraps',
     'Mixed vegetable scraps',
   ];
+
+  /// Fetch similar recipe recommendations from the backend ML model.
+Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5}) async {
+    final uri = Uri.parse('http://192.168.100.3:8000/recommendations')
+        .replace(queryParameters: {'recipe_id': recipeId, 'n': n.toString()});
+    try {
+      final response = await http
+          .get(uri)
+          .timeout(const Duration(seconds: 10), onTimeout: () {
+        throw TimeoutException('Request to backend timed out');
+      });
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final recs = data['recommendations'] as List<dynamic>;
+        return recs.map((e) {
+          final map = e as Map<String, dynamic>;
+          return RecipeSuggestion(
+            id: map['recipe_id'].toString(),
+            title: map['title'] ?? '',
+            summary: map['summary'] ?? '',
+            ingredients: List<String>.from(map['ingredients'] ?? []),
+            matchReason: map['matchReason'] ?? '',
+            chefNote: map['chefNote'],
+          );
+        }).toList();
+      } else {
+        print('Failed to fetch recommendations: ${response.statusCode}');
+        return [];
+      }
+    } on TimeoutException catch (e) {
+      print('Timeout fetching recommendations: $e');
+      return [];
+    } catch (e) {
+      print('Error fetching recommendations: $e');
+      return [];
+    }
+}
+
+  /// Fetch recipe recommendations from the backend ML model using scrap labels.
+  Future<List<RecipeSuggestion>> fetchRecommendationsForLabels(Iterable<String> labels, {int n = 5}) async {
+    if (labels.isEmpty) {
+      return [];
+    }
+
+    final labelQuery = labels.join(',');
+    final uri = Uri.parse('http://192.168.100.3:8000/recommendations/by_labels')
+        .replace(queryParameters: {'labels': labelQuery, 'n': n.toString()});
+
+    try {
+      final response = await http
+          .get(uri)
+          .timeout(const Duration(seconds: 10), onTimeout: () {
+        throw TimeoutException('Request to backend timed out');
+      });
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final recs = data['recommendations'] as List<dynamic>;
+        return recs.map((e) {
+          final map = e as Map<String, dynamic>;
+          return RecipeSuggestion(
+            id: map['recipe_id'].toString(),
+            title: map['title'] ?? '',
+            summary: map['summary'] ?? '',
+            ingredients: List<String>.from(map['ingredients'] ?? []),
+            matchReason: map['matchReason'] ?? '',
+            chefNote: map['chefNote'],
+          );
+        }).toList();
+      }
+
+      print('Failed to fetch label recommendations: ${response.statusCode}');
+      return [];
+    } on TimeoutException catch (e) {
+      print('Timeout fetching label recommendations: $e');
+      return [];
+    } catch (e) {
+      print('Error fetching label recommendations: $e');
+      return [];
+    }
+  }
 
   static const Map<String, String> _labelAliases = {
     'orange peels': 'citrus_peel',
@@ -88,6 +172,11 @@ class RecipeService {
   Future<List<RecipeSuggestion>> suggestForLabels(Iterable<String> labelsIterable) async {
     final labels = labelsIterable.toList();
     final normalized = _normalizeLabels(labels);
+
+    final backendRecipes = await fetchRecommendationsForLabels(normalized, n: 5);
+    if (backendRecipes.isNotEmpty) {
+      return backendRecipes;
+    }
 
     // Try to get recipes from MealDB for each ingredient
     final mealDBRecipes = <RecipeSuggestion>[];

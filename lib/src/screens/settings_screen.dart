@@ -1,43 +1,27 @@
 import 'package:flutter/material.dart';
 
 import '../state/app_state.dart';
-import '../services/preferences_service.dart';
-import '../theme/app_theme.dart';
 import '../constants/ui_constants.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
     required this.appState,
-    required this.onThemeChanged,
-    required this.isDarkMode,
   });
 
   final AppState appState;
-  final ValueChanged<bool> onThemeChanged;
-  final bool? isDarkMode; // isDarkMode may be null if not provided
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isDark = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize dark mode from passed value or persisted preference
-    _isDark = widget.isDarkMode ?? PreferencesService.isDarkMode;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isDark = _isDark;
-    final bgColor = isDark ? UIConstants.kDarkBackground : UIConstants.kBackground;
-    final cardColor = isDark ? UIConstants.kDarkSurface : UIConstants.kSurface;
-    final textColor = isDark ? UIConstants.kDarkText : UIConstants.kText;
-    final dividerColor = isDark ? UIConstants.kDarkDivider : UIConstants.kDivider;
+    final bgColor = UIConstants.kBackground;
+    final cardColor = UIConstants.kSurface;
+    final textColor = UIConstants.kText;
+    final dividerColor = UIConstants.kDivider;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -116,36 +100,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          // Appearance Section
-          _SectionHeader(title: 'Appearance', icon: Icons.palette_rounded, textColor: textColor),
-          const SizedBox(height: 12),
-          _SettingsCard(
-            cardColor: cardColor,
-            textColor: textColor,
-            child: Column(
-              children: [
-                _ToggleTile(
-                  icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                  iconColor: UIConstants.kPrimary,
-                  title: 'Dark Mode',
-                  subtitle: 'Switch between light and dark theme',
-                  value: isDark,
-                  textColor: textColor,
-                  onChanged: (value) async {
-                    setState(() {
-                      _isDark = value;
-                    });
-                    // Persist the preference
-                    await PreferencesService.setDarkMode(value);
-                    debugPrint('Dark mode preference saved: $value');
-                    widget.onThemeChanged(value);
-                    _showThemeSnackBar(value);
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
           // About Section
           _SectionHeader(title: 'About', icon: Icons.info_rounded, textColor: textColor),
           const SizedBox(height: 12),
@@ -219,18 +173,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 40),
         ],
-      ),
-    );
-  }
-
-  void _showThemeSnackBar(bool isDark) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isDark ? '🌙 Dark mode enabled' : '☀️ Light mode enabled',
-        ),
-        backgroundColor: isDark ? Colors.indigo : UIConstants.kSecondary,
-        duration: const Duration(seconds: 2),
       ),
     );
   }
