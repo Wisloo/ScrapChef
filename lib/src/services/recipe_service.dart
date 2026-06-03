@@ -68,6 +68,50 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
     }
 }
 
+  /// Find recipes using the RAG API based on a natural language query.
+  Future<List<RecipeSuggestion>> findRecipes(String query, {int topK = 5}) async {
+    final uri = Uri.parse('https://wisloo-scrap-chef-rag-api.hf.space/search');
+    
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'query': query, 'top_k': topK}),
+          )
+          .timeout(const Duration(seconds: 30), onTimeout: () {
+        throw TimeoutException('Request to RAG API timed out');
+      });
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final retrievedRecipes = data['retrieved_recipes'] as List<dynamic>;
+        final summary = data['summary'] as String?;
+        
+        return retrievedRecipes.map((e) {
+          final map = e as Map<String, dynamic>;
+          return RecipeSuggestion(
+            id: map['recipe_id'].toString(),
+            title: map['recipe_name'] ?? '',
+            summary: summary ?? '',
+            ingredients: (map['ingredients'] as String).split(',').map((s) => s.trim()).toList(),
+            matchReason: '',
+            chefNote: null,
+          );
+        }).toList();
+      } else {
+        print('Failed to find recipes: ${response.statusCode}');
+        return [];
+      }
+    } on TimeoutException catch (e) {
+      print('Timeout finding recipes: $e');
+      return [];
+    } catch (e) {
+      print('Error finding recipes: $e');
+      return [];
+    }
+  }
+
   /// Fetch recipe recommendations from the backend ML model using scrap labels.
   Future<List<RecipeSuggestion>> fetchRecommendationsForLabels(Iterable<String> labels, {int n = 5}) async {
     if (labels.isEmpty) {

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models.dart';
 import '../state/app_state.dart';
 import '../services/sound_service.dart';
+import '../services/recipe_service.dart';
 import 'scan_screen.dart';
 import 'settings_screen.dart';
 import 'recipe_list_screen.dart';
@@ -28,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _heroAnimationController;
   late Animation<double> _heroAnimation;
+  final RecipeService _recipeService = RecipeService();
 
   @override
   void initState() {
@@ -458,6 +460,7 @@ class _InventoryTab extends StatefulWidget {
 
 class _InventoryTabState extends State<_InventoryTab> {
   final Set<String> _selectedItems = {};
+  final RecipeService _recipeService = RecipeService();
 
   String _itemKey(ScrapItem item) {
     return item.id ?? '${item.label}_${item.loggedAt.millisecondsSinceEpoch}';
@@ -480,22 +483,54 @@ class _InventoryTabState extends State<_InventoryTab> {
     });
   }
 
-  void _findRecipesForSelected() {
+  Future<void> _findRecipesForSelected() async {
     if (_selectedItems.isNotEmpty) {
       SoundService.playClick();
       final labels = widget.items
           .where((item) => _selectedItems.contains(_itemKey(item)))
           .map((item) => item.label)
           .toList();
-      widget.onOpenRecipes(labels);
+      
+      // Use RAG API to find recipes based on natural language query
+      final query = 'Recipes using ${labels.join(', ')}';
+      final recipes = await _recipeService.findRecipes(query);
+      
+      // Navigate to recipe list with RAG results
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => RecipeListScreen(
+              appState: widget.appState,
+              labels: labels,
+              ragRecipes: recipes,
+            ),
+          ),
+        );
+      }
     }
   }
 
-  void _findRecipesForAll() {
+  Future<void> _findRecipesForAll() async {
     if (widget.items.isNotEmpty) {
       SoundService.playClick();
       final labels = widget.items.map((item) => item.label).toList();
-      widget.onOpenRecipes(labels);
+      
+      // Use RAG API to find recipes based on natural language query
+      final query = 'Recipes using ${labels.join(', ')}';
+      final recipes = await _recipeService.findRecipes(query);
+      
+      // Navigate to recipe list with RAG results
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => RecipeListScreen(
+              appState: widget.appState,
+              labels: labels,
+              ragRecipes: recipes,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -585,7 +620,7 @@ class _InventoryTabState extends State<_InventoryTab> {
                 ),
                 const SizedBox(width: 12),
                 animated.AnimatedButton(
-                  onPressed: _findRecipesForAll,
+                  onPressed: () => _findRecipesForAll(),
                   color: Theme.of(context).colorScheme.primary,
                   borderRadius: 16,
                   height: 56,
@@ -636,7 +671,7 @@ class _InventoryTabState extends State<_InventoryTab> {
                 ),
                 const SizedBox(width: 8),
                 animated.AnimatedButton(
-                  onPressed: _findRecipesForSelected,
+                  onPressed: () => _findRecipesForSelected(),
                   color: Theme.of(context).colorScheme.primary,
                   borderRadius: 16,
                   height: 56,

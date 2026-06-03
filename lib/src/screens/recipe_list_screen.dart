@@ -13,10 +13,16 @@ const Color kHerbSage = Color(0xFFD4E5D0);
 const Color kCaptionGray = Color(0xFF9A8B7E);
 
 class RecipeListScreen extends StatefulWidget {
-  const RecipeListScreen({super.key, required this.appState, required this.labels});
+  const RecipeListScreen({
+    super.key,
+    required this.appState,
+    required this.labels,
+    this.ragRecipes,
+  });
 
   final AppState appState;
   final List<String> labels;
+  final List<RecipeSuggestion>? ragRecipes;
 
   @override
   State<RecipeListScreen> createState() => _RecipeListScreenState();
@@ -33,12 +39,22 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
   }
 
   Future<void> _loadRecipes() async {
-    final loadedRecipes = await widget.appState.suggestForLabels(widget.labels);
-    if (mounted) {
-      setState(() {
-        recipes = loadedRecipes;
-        isLoading = false;
-      });
+    // Use RAG recipes if provided, otherwise fall back to label-based suggestions
+    if (widget.ragRecipes != null) {
+      if (mounted) {
+        setState(() {
+          recipes = widget.ragRecipes!;
+          isLoading = false;
+        });
+      }
+    } else {
+      final loadedRecipes = await widget.appState.suggestForLabels(widget.labels);
+      if (mounted) {
+        setState(() {
+          recipes = loadedRecipes;
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -183,22 +199,6 @@ class _RecipeCard extends StatelessWidget {
               fontSize: 13,
               color: kSketchCharcoal,
               height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color.fromRGBO(212, 229, 208, 0.25),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              recipe.matchReason,
-              style: TextStyle(
-                fontSize: 12,
-                color: kRecipeWarmBrown,
-                fontWeight: FontWeight.w500,
-              ),
             ),
           ),
         ],

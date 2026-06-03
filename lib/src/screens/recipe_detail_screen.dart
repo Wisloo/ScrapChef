@@ -19,12 +19,9 @@ class RecipeDetailScreen extends StatefulWidget {
 }
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
-  late Future<List<RecipeSuggestion>> _recommendationsFuture;
-
   @override
   void initState() {
     super.initState();
-    _recommendationsFuture = widget.appState.recipeService.suggestForLabels(widget.recipe.ingredients);
   }
 
   @override
@@ -76,7 +73,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _MatchBadge(matchReason: widget.recipe.matchReason),
                   const SizedBox(height: 24),
                   Text(
                     widget.recipe.summary,
@@ -211,23 +207,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 28),
-                  FutureBuilder<List<RecipeSuggestion>>(
-                    future: _recommendationsFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Text('No recommendations found', style: TextStyle(color: textColor.withAlpha(120)));
-                      }
-                      return _RecommendationSection(
-                        recommendations: snapshot.data!,
-                        cardColor: cardColor,
-                        textColor: textColor,
-                      );
-                    },
-                  ),
                   const SizedBox(height: 32),
                   Row(
                     children: [
@@ -382,124 +361,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   ),
                   const SizedBox(height: 40),
                 ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecommendationSection extends StatelessWidget {
-  const _RecommendationSection({
-    required this.recommendations,
-    required this.cardColor,
-    required this.textColor,
-  });
-
-  final List<RecipeSuggestion> recommendations;
-  final Color cardColor;
-  final Color textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: textColor.withAlpha(10),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Recommended Recipes',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: min(recommendations.length, 5),
-            itemBuilder: (context, index) {
-              final rec = recommendations[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      rec.title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: textColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      rec.summary,
-                      style: TextStyle(
-                        color: textColor.withAlpha(160),
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _MatchBadge(matchReason: rec.matchReason),
-                  ],
-                ),
-              );
-            },
-            separatorBuilder: (context, index) {
-              return Divider(height: 1, color: textColor.withAlpha(80));
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MatchBadge extends StatelessWidget {
-  const _MatchBadge({required this.matchReason});
-
-  final String matchReason;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [UIConstants.kSecondary.withAlpha(20), UIConstants.kSecondary.withAlpha(10)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: UIConstants.kSecondary.withAlpha(50)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.auto_awesome_rounded, size: 16, color: UIConstants.kSecondary),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              matchReason,
-              style: const TextStyle(
-                color: UIConstants.kSecondary,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
               ),
             ),
           ),
