@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import 'services/gemini_service.dart' show QwenService;
+import 'services/openrouter_service.dart' show OpenRouterService;
 import 'services/recipe_service.dart';
 import 'services/preferences_service.dart';
 import 'services/sound_service.dart';
@@ -31,12 +31,11 @@ class _ScrapChefAppState extends State<ScrapChefApp> {
     super.initState();
     _loadPreferences();
     debugPrint('[App] Creating appState');
-    final backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://localhost:8000';
     appState = AppState(
-      classifierService: QwenService(backendUrl),
+      classifierService: OpenRouterService(),
       recipeService: RecipeService(),
     );
-    debugPrint('[App] appState created with backend URL: $backendUrl');
+    debugPrint('[App] appState created with OpenRouterService');
     // Listen to appState changes to trigger rebuild
     appState.addListener(() {
       if (mounted) {

@@ -72,24 +72,11 @@ def main():
     chunk_size = 5000
     chunks = []
     for chunk in pd.read_csv(INPUT_CSV, chunksize=chunk_size):
-        # Feature engineering
         # 1. title_len
         chunk['title_len'] = chunk['Name'].fillna('').apply(len)
         # 2. num_ingredients
         chunk['num_ingredients'] = chunk['RecipeIngredientParts'].apply(count_ingredients)
-        # 3. cuisine: we'll create one-hot encoding for the top cuisines later, but for now
-        #    we'll extract the first cuisine from RecipeCategory (if multiple, take the first)
-        #    and then we can one-hot encode. However, the requirement is to have at least 10 attributes.
-        #    We'll create a binary feature for whether the recipe belongs to a certain category.
-        #    But to keep it simple and meet the requirement of at least 10 attributes, we'll
-        #    create a few categorical features and then one-hot encode them, which will add more than 10.
-        #    However, the instructions say "use at least 10 attributes", meaning we need at least 10
-        #    features (columns) in the final feature matrix. We can achieve that with the numeric
-        #    features we already have and then add a few one-hot encoded columns.
-        #    Let's first extract the cuisine categories (split by commas) and then create a binary
-        #    column for each of the top 5 cuisines.
-        #    We'll do that after processing all chunks to know the top cuisines.
-        #    For now, we'll just create a string column with the first cuisine.
+        # 3. cuisine
         chunk['cuisine'] = chunk['RecipeCategory'].fillna('').apply(
             lambda x: str(x).split(',')[0] if str(x) else ''
         )
@@ -120,7 +107,6 @@ def main():
     # Concatenate all chunks
     df_features = pd.concat(chunks, ignore_index=True)
     
-    # Now, one-hot encode the cuisine column (we'll keep the top 5 cuisines and group the rest as 'Other')
     cuisine_counts = df_features['cuisine'].value_counts()
     top_cuisines = cuisine_counts.head(5).index.tolist()
     def map_cuisine(c):

@@ -5,7 +5,7 @@ import '../models.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/firebase_recipe_store.dart';
 import '../services/firebase_scrap_store.dart';
-import '../services/gemini_service.dart' show QwenService;
+import '../services/openrouter_service.dart' show OpenRouterService;
 import '../services/recipe_service.dart';
 import '../services/sound_service.dart';
 import 'package:flutter/foundation.dart';
@@ -13,7 +13,7 @@ import 'package:flutter/foundation.dart';
 class AppState extends ChangeNotifier {
   static const double scanConfidenceThreshold = 0.70;
   AppState({
-  required QwenService classifierService,
+  required OpenRouterService classifierService,
     required RecipeService recipeService,
   })  : _classifierService = classifierService,
         _recipeService = recipeService,
@@ -25,13 +25,13 @@ class AppState extends ChangeNotifier {
     debugPrint('[AppState] _bootstrap completed');
   }
 
-  final QwenService _classifierService;
+final OpenRouterService _classifierService;
   final FirebaseAuthService _authService;
   final FirebaseRecipeStore _recipeStore;
   final FirebaseScrapStore _scrapStore;
   StreamSubscription<List<ScrapItem>>? _scrapSubscription;
 
-  QwenService get classifierService => _classifierService;
+OpenRouterService get classifierService => _classifierService;
   RecipeService get recipeService => _recipeService;
   final RecipeService _recipeService;
 

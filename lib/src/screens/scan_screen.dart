@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../state/app_state.dart';
 import '../constants/ui_constants.dart';
+import '../services/openrouter_service.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key, required this.appState});
@@ -229,9 +230,8 @@ class _ScanScreenState extends State<ScanScreen> {
     }
 
     try {
-      final result = await widget.appState.classifierService.analyzeFoodScraps(
-        imagePath,
-      );
+final openRouterService = OpenRouterService();
+final result = await openRouterService.analyzeFoodScraps(imagePath);
 
       if (mounted && loadingShown) {
         Navigator.of(context, rootNavigator: true).pop();
