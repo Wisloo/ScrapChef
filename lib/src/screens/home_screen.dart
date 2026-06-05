@@ -110,16 +110,25 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  void _openRecipes(List<String> labels) {
+  Future<void> _openRecipes(List<String> labels) async {
     SoundService.playClick();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => RecipeListScreen(
-          appState: widget.appState,
-          labels: labels,
+    
+    // Use RAG API to find recipes based on natural language query
+    final query = 'Recipes using ${labels.join(', ')}';
+    final recipes = await _recipeService.findRecipes(query);
+    
+    // Navigate to recipe list with RAG results
+    if (mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RecipeListScreen(
+            appState: widget.appState,
+            labels: labels,
+            ragRecipes: recipes,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override
