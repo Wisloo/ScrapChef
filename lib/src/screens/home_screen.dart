@@ -8,6 +8,7 @@ import '../services/recipe_service.dart';
 import 'scan_screen.dart';
 import 'settings_screen.dart';
 import 'recipe_list_screen.dart';
+import 'bin_screen.dart';
 import '../widgets/animated_button.dart' as animated;
 import '../widgets/app_card.dart';
 import '../widgets/app_button.dart';
@@ -140,9 +141,9 @@ class _HomeScreenState extends State<HomeScreen>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    UIConstants.kPrimaryDark.withOpacity(0.3),
-                    UIConstants.kPrimary.withOpacity(0.5),
-                    UIConstants.kPrimaryLight.withOpacity(0.2),
+                    Theme.of(context).colorScheme.primary.withOpacity(0.85),
+                    Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                    Theme.of(context).colorScheme.secondary.withOpacity(0.5),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -153,19 +154,66 @@ class _HomeScreenState extends State<HomeScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(
                     children: [
-                      Image.asset(
-                        'lib/image/ScrapChefLogo.jpg',
-                        width: 32,
-                        height: 32,
-                        fit: BoxFit.contain,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(25),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Image.asset(
+                          'lib/image/ScrapChefLogo.jpg',
+                          width: 36,
+                          height: 36,
+                          fit: BoxFit.contain,
+                        ),
                       ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'ScrapChef',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'ScrapChef',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5,
+                              height: 1.0,
+                            ),
+                          ),
+                          Text(
+                            'Turn scraps into suppers',
+                            style: TextStyle(
+                              color: Colors.white.withAlpha(180),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(25),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withAlpha(40), width: 1),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.eco_outlined, size: 14, color: Colors.white),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Eco-friendly',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -182,50 +230,27 @@ class _HomeScreenState extends State<HomeScreen>
                   itemsLogged: itemsLogged,
                   estimatedSavings: estimatedSavings,
                   onSettingsTap: _openSettings,
+                  appState: widget.appState,
                 ),
               ),
             ),
-            // Tab bar (fixed)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: TabBar(
-                labelColor: Theme.of(context).colorScheme.secondary,
-                unselectedLabelColor: Theme.of(context).colorScheme
-                    .onSurface
-                    .withAlpha(153),
-                indicatorColor: Theme.of(context).colorScheme.secondary,
-                indicatorWeight: 3,
-                labelStyle: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-                unselectedLabelStyle:
-                    Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.normal),
-                tabs: const <Widget>[
-                  Tab(text: 'Scan'),
-                  Tab(text: 'Bin'),
-                ],
-              ),
-            ),
-            // Scrollable tab content
+            // Non-scrollable content
             Expanded(
-              child: TabBarView(
-                children: <Widget>[
-                  Container(
-                    padding: const EdgeInsets.all(UIConstants.kVerticalGap),
-                    child: _ScanTab(appState: widget.appState, outcome: outcome, itemsLogged: itemsLogged, weeklyScanCount: widget.appState.weeklyScanCount),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(UIConstants.kVerticalGap),
-                    child: _InventoryTab(
-                      items: inventory,
-                      onBatchSelect: _onBatchSelect,
-                      appState: widget.appState,
-                      onOpenRecipes: _openRecipes,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(UIConstants.kVerticalGap),
+                child: Column(
+                  children: <Widget>[
+                    _ImpactLedger(itemsLogged: itemsLogged),
+                    const SizedBox(height: 20),
+                    Divider(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                      thickness: 1,
+                      indent: 0,
+                      endIndent: 0,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
             // Fixed action panel at bottom - continuous without rounded borders
@@ -247,11 +272,13 @@ class _HeroHeader extends StatelessWidget {
     required this.itemsLogged,
     required this.estimatedSavings,
     required this.onSettingsTap,
+    required this.appState,
   });
 
   final int itemsLogged;
   final double estimatedSavings;
   final VoidCallback onSettingsTap;
+  final AppState appState;
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +286,14 @@ class _HeroHeader extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary.withAlpha(10),
+              Theme.of(context).colorScheme.secondary.withAlpha(5),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -274,15 +308,19 @@ class _HeroHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        'Turn scraps into suppers',
+                        'Your kitchen companion',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme
                                   .onSurface
-                                  .withAlpha(160),
+                                  .withAlpha(180),
                               fontStyle: FontStyle.normal,
                               fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.1,
+                              height: 1.2,
                             ),
+                        maxLines: 2,
+                        overflow: TextOverflow.visible,
                       ),
                     ],
                   ),
@@ -291,31 +329,58 @@ class _HeroHeader extends StatelessWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                          horizontal: 18, vertical: 12),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
+                        gradient: LinearGradient(
+                          colors: [
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
                             color: Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withOpacity(0.3),
-                            blurRadius: 10,
+                                .withOpacity(0.4),
+                            blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                      child: Text(
-                        '$itemsLogged',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.restaurant, size: 18, color: Theme.of(context).colorScheme.onPrimary),
+                          const SizedBox(width: 6),
+                          Text(
+                            '$itemsLogged',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 20,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 12),
+                    animated.AnimatedIconButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => BinScreen(appState: appState),
+                          ),
+                        );
+                      },
+                      icon: Icons.inventory_2_outlined,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      iconColor: Theme.of(context).colorScheme.onPrimary,
+                      size: 56,
+                    ),
+                    const SizedBox(width: 8),
                     animated.AnimatedIconButton(
                       onPressed: onSettingsTap,
                       icon: Icons.settings_outlined,
@@ -329,7 +394,7 @@ class _HeroHeader extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Divider(
-              color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(8),
               thickness: 1,
               indent: 0,
               endIndent: 0,
@@ -341,46 +406,112 @@ class _HeroHeader extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Row(
-                        children: [
-                          Icon(Icons.check_circle,
-                              size: 16,
-                              color: Theme.of(context).colorScheme.primary),
-                          const SizedBox(width: 6),
-                          Text(
-                            '$itemsLogged scraps scanned',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface,
-                                  fontWeight: FontWeight.normal,
-                                ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary.withAlpha(12),
+                              Theme.of(context).colorScheme.primary.withAlpha(6),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ],
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary.withAlpha(20),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withAlpha(8),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withAlpha(20),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(Icons.check_circle,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.primary),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              '$itemsLogged scraps scanned',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.attach_money,
-                              size: 16,
-                              color: Theme.of(context).colorScheme.secondary),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Estimated ₱${estimatedSavings.toStringAsFixed(0)} saved',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface,
-                                  fontWeight: FontWeight.normal,
-                                ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.secondary.withAlpha(12),
+                              Theme.of(context).colorScheme.secondary.withAlpha(6),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ],
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.secondary.withAlpha(20),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.secondary.withAlpha(8),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.secondary.withAlpha(20),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(Icons.attach_money,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.secondary),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Estimated ₱${estimatedSavings.toStringAsFixed(0)} saved',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -436,293 +567,6 @@ class _ScanTab extends StatelessWidget {
           endIndent: 0,
         ),
         const SizedBox(height: 16),
-      ],
-    );
-  }
-}
-
-class _InventoryTab extends StatefulWidget {
-  const _InventoryTab({
-    required this.items,
-    required this.onBatchSelect,
-    required this.appState,
-    required this.onOpenRecipes,
-  });
-
-  final List<ScrapItem> items;
-  final Function(List<String>) onBatchSelect;
-  final AppState appState;
-  final Function(List<String>) onOpenRecipes;
-
-  @override
-  State<_InventoryTab> createState() => _InventoryTabState();
-}
-
-class _InventoryTabState extends State<_InventoryTab> {
-  final Set<String> _selectedItems = {};
-  final RecipeService _recipeService = RecipeService();
-
-  String _itemKey(ScrapItem item) {
-    return item.id ?? '${item.label}_${item.loggedAt.millisecondsSinceEpoch}';
-  }
-
-  void _toggleSelection(ScrapItem item) {
-    final key = _itemKey(item);
-    setState(() {
-      if (_selectedItems.contains(key)) {
-        _selectedItems.remove(key);
-      } else {
-        _selectedItems.add(key);
-      }
-    });
-  }
-
-  void _clearSelection() {
-    setState(() {
-      _selectedItems.clear();
-    });
-  }
-
-  Future<void> _findRecipesForSelected() async {
-    if (_selectedItems.isNotEmpty) {
-      SoundService.playClick();
-      final labels = widget.items
-          .where((item) => _selectedItems.contains(_itemKey(item)))
-          .map((item) => item.label)
-          .toList();
-      
-      // Use RAG API to find recipes based on natural language query
-      final query = 'Recipes using ${labels.join(', ')}';
-      final recipes = await _recipeService.findRecipes(query);
-      
-      // Navigate to recipe list with RAG results
-      if (mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => RecipeListScreen(
-              appState: widget.appState,
-              labels: labels,
-              ragRecipes: recipes,
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _findRecipesForAll() async {
-    if (widget.items.isNotEmpty) {
-      SoundService.playClick();
-      final labels = widget.items.map((item) => item.label).toList();
-      
-      // Use RAG API to find recipes based on natural language query
-      final query = 'Recipes using ${labels.join(', ')}';
-      final recipes = await _recipeService.findRecipes(query);
-      
-      // Navigate to recipe list with RAG results
-      if (mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => RecipeListScreen(
-              appState: widget.appState,
-              labels: labels,
-              ragRecipes: recipes,
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  void _deleteItem(ScrapItem item) {
-    final key = _itemKey(item);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Item?'),
-        content: Text('Remove "${item.label}" from your scrap bin?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              widget.appState.deleteItem(item);
-              _selectedItems.remove(key);
-              Navigator.pop(context);
-            },
-            child: const Text('Delete',
-                style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  widget.items.isEmpty
-                      ? 'Scrap bin is empty'
-                      : '${widget.items.length} items',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.normal,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              if (widget.items.isNotEmpty && _selectedItems.isEmpty) ...[
-                TextButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Clear Scrap Bin?'),
-                        content: const Text(
-                            'This will remove all items from your scrap bin.'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              widget.appState.clearBin();
-                              Navigator.pop(context);
-                              _clearSelection();
-                            },
-                            child: const Text('Clear',
-                                style: TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  child: Text(
-                    'Clear All',
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                animated.AnimatedButton(
-                  onPressed: () => _findRecipesForAll(),
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: 16,
-                  height: 56,
-                  shadow: true,
-                  child: Text(
-                    'Find Recipes',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        if (_selectedItems.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${_selectedItems.length} item${_selectedItems.length == 1 ? '' : 's'} selected',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: _clearSelection,
-                  child: Text(
-                    'Clear Selection',
-                    style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withAlpha(140)),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                animated.AnimatedButton(
-                  onPressed: () => _findRecipesForSelected(),
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: 16,
-                  height: 56,
-                  shadow: true,
-                  child: Text(
-                    'Find Recipes',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        Flexible(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            children: <Widget>[
-              _SectionCard(
-                title: 'Scrap bin',
-                subtitle: _selectedItems.isEmpty
-                    ? 'Tap items to select multiple for batch recipe matching.'
-                    : 'Select more items or tap "Find Recipes".',
-                child: widget.items.isEmpty
-                    ? const Text(
-                        'No scraps logged yet. Use the camera tab to add one.')
-                    : Column(
-                        children: widget.items
-                            .map((item) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _InventoryTile(
-                                item: item,
-                                isSelected:
-                                    _selectedItems.contains(_itemKey(item)),
-                                onTap: () => _toggleSelection(item),
-                                onDelete: () => _deleteItem(item),
-                              ),
-                            ))
-                            .toList(),
-                      ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }

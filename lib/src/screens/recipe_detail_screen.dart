@@ -24,11 +24,81 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     super.initState();
   }
 
+  Widget _parseInstructions(String instructions) {
+    // Split instructions by sentence endings or step markers
+    final steps = instructions
+        .split(RegExp(r'\.\s+|Step\s+\d+:|,\s+'))
+        .where((step) => step.trim().isNotEmpty)
+        .toList();
+    
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    
+    return Column(
+      children: steps.asMap().entries.map((entry) {
+        final index = entry.key;
+        final step = entry.value.trim();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [primaryColor.withAlpha(20), primaryColor.withAlpha(10)],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: primaryColor.withAlpha(40)),
+                ),
+                child: Text(
+                  '${index + 1}',
+                  style: TextStyle(fontWeight: FontWeight.w700, color: primaryColor),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  step.endsWith('.') ? step : '$step.',
+                  style: TextStyle(fontSize: 15, color: textColor, height: 1.5),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildFallbackHeader(Color primaryColor) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primaryColor, primaryColor.withAlpha(220)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.restaurant_menu_rounded,
+          size: 84,
+          color: Colors.white.withAlpha(90),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bgColor = UIConstants.kBackground;
-    final cardColor = UIConstants.kSurface;
-    final textColor = UIConstants.kText;
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    final cardColor = Theme.of(context).cardColor;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final secondaryColor = Theme.of(context).colorScheme.secondary;
 
     final isSaved = widget.appState.isRecipeSaved(widget.recipe);
 
@@ -37,9 +107,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 220,
+            expandedHeight: 280,
             pinned: true,
-            backgroundColor: UIConstants.kPrimary,
+            backgroundColor: primaryColor,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 widget.recipe.title,
@@ -47,24 +117,39 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
                   fontSize: 18,
+                  letterSpacing: -0.3,
                 ),
               ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [UIConstants.kPrimary, UIConstants.kPrimaryLight.withAlpha(220)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.restaurant_menu_rounded,
-                    size: 84,
-                    color: Colors.white.withAlpha(90),
-                  ),
-                ),
-              ),
+              background: widget.recipe.imageUrl != null && widget.recipe.imageUrl!.isNotEmpty
+                  ? Image.network(
+                      widget.recipe.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildFallbackHeader(primaryColor);
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [primaryColor, primaryColor.withAlpha(220)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                              color: Colors.white,
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  : _buildFallbackHeader(primaryColor),
             ),
           ),
           SliverToBoxAdapter(
@@ -86,20 +171,20 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   _SectionTitle(
                     icon: Icons.shopping_basket_rounded,
                     title: 'Ingredients',
-                    color: UIConstants.kPrimary,
+                    color: primaryColor,
                     textColor: textColor,
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: cardColor,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
                           color: textColor.withAlpha(15),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
@@ -112,8 +197,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                               Container(
                                 width: 8,
                                 height: 8,
-                                decoration: const BoxDecoration(
-                                  color: UIConstants.kSecondary,
+                                decoration: BoxDecoration(
+                                  color: secondaryColor,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -137,76 +222,35 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   const SizedBox(height: 28),
                   _SectionTitle(
                     icon: Icons.format_list_numbered_rounded,
-                    title: 'Steps',
-                    color: UIConstants.kPrimary,
+                    title: 'Instructions',
+                    color: primaryColor,
                     textColor: textColor,
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: cardColor,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
                           color: textColor.withAlpha(15),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
-                    child: Column(
-                      children: const [
-                        _Step(number: '1', text: 'Gather all your ingredients and clean the scraps.'),
-                        _Step(number: '2', text: 'Prepare the vegetables by washing and chopping.'),
-                        _Step(number: '3', text: 'Heat a pan with olive oil over medium heat.'),
-                        _Step(number: '4', text: 'Add ingredients and cook until tender.'),
-                        _Step(number: '5', text: 'Season to taste and serve warm.'),
-                      ],
-                    ),
-                  ),
-                  if (widget.recipe.chefNote != null) ...[
-                    const SizedBox(height: 28),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [UIConstants.kPrimary.withAlpha(15), UIConstants.kPrimaryLight.withAlpha(8)],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: UIConstants.kPrimary.withAlpha(30)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.lightbulb_rounded, color: UIConstants.kPrimary, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Chef\'s Note',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: textColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            widget.recipe.chefNote!,
+                    child: widget.recipe.chefNote != null
+                        ? _parseInstructions(widget.recipe.chefNote!)
+                        : Text(
+                            'No instructions available.',
                             style: TextStyle(
                               fontSize: 15,
-                              color: textColor.withAlpha(160),
+                              color: textColor,
                               fontStyle: FontStyle.italic,
-                              height: 1.5,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                   const SizedBox(height: 32),
                   Row(
                     children: [
@@ -214,7 +258,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         child: _ActionButton(
                           icon: isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                           label: isSaved ? 'Saved' : 'Save',
-                          color: isSaved ? UIConstants.kSecondary : textColor,
+                          color: isSaved ? secondaryColor : textColor,
                           cardColor: cardColor,
                           onTap: () async {
                             if (!widget.appState.isSignedIn) {
@@ -229,7 +273,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(widget.appState.isRecipeSaved(widget.recipe) ? 'Recipe saved!' : 'Recipe removed.'),
-                                  backgroundColor: UIConstants.kSecondary,
+                                  backgroundColor: secondaryColor,
                                 ),
                               );
                             }
@@ -241,7 +285,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         child: _ActionButton(
                           icon: Icons.note_add_rounded,
                           label: 'Note',
-                          color: UIConstants.kPrimary,
+                          color: primaryColor,
                           cardColor: cardColor,
                           onTap: () async {
                             if (!widget.appState.isSignedIn) {
@@ -339,24 +383,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _ActionButton(
-                          icon: Icons.share_rounded,
-                          label: 'Share',
-                          color: UIConstants.kPrimary,
-                          cardColor: cardColor,
-                          onTap: () {
-                            HapticFeedback.mediumImpact();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Share feature coming soon!'),
-                                backgroundColor: UIConstants.kPrimary,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 40),
@@ -406,6 +432,9 @@ class _Step extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
@@ -417,21 +446,21 @@ class _Step extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [UIConstants.kPrimary.withAlpha(20), UIConstants.kPrimaryLight.withAlpha(10)],
+                colors: [primaryColor.withAlpha(20), primaryColor.withAlpha(10)],
               ),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: UIConstants.kPrimary.withAlpha(40)),
+              border: Border.all(color: primaryColor.withAlpha(40)),
             ),
             child: Text(
               number,
-              style: const TextStyle(fontWeight: FontWeight.w700, color: UIConstants.kPrimary),
+              style: TextStyle(fontWeight: FontWeight.w700, color: primaryColor),
             ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 15, color: UIConstants.kText.withAlpha(170), height: 1.5),
+              style: TextStyle(fontSize: 15, color: textColor, height: 1.5),
             ),
           ),
         ],

@@ -478,38 +478,6 @@ class _CameraOptions extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
-              // Help text
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: textColor.withAlpha(10),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.info_outline_rounded, size: 18, color: UIConstants.kSecondary),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: Text(
-                        'Photos are analyzed securely with AI',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: textColor.withAlpha(140),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),

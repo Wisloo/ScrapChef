@@ -70,33 +70,33 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
   /// Find recipes using the RAG API based on a natural language query.
   Future<List<RecipeSuggestion>> findRecipes(String query, {int topK = 5}) async {
-    final uri = Uri.parse('https://wisloo-scrap-chef-rag-api.hf.space/search');
+    // Use ngrok URL for phone access, localhost for emulator
+    final uri = Uri.parse('https://stencil-premium-mace.ngrok-free.dev/recommend');
     
     try {
       final response = await http
           .post(
             uri,
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'query': query, 'top_k': topK}),
+            body: jsonEncode({'query': query, 'top_k': topK, 'use_scrap_mapping': true}),
           )
           .timeout(const Duration(seconds: 30), onTimeout: () {
         throw TimeoutException('Request to RAG API timed out');
       });
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final retrievedRecipes = data['retrieved_recipes'] as List<dynamic>;
-        final summary = data['summary'] as String?;
+        final data = jsonDecode(response.body) as List<dynamic>;
         
-        return retrievedRecipes.map((e) {
+        return data.map((e) {
           final map = e as Map<String, dynamic>;
           return RecipeSuggestion(
-            id: map['recipe_id'].toString(),
-            title: map['recipe_name'] ?? '',
-            summary: summary ?? '',
+            id: map['title']?.toString(),
+            title: map['title'] ?? '',
+            summary: 'AI-recommended based on your query',
             ingredients: (map['ingredients'] as String).split(',').map((s) => s.trim()).toList(),
-            matchReason: '',
-            chefNote: null,
+            matchReason: 'Similarity: ${((map['similarity_score'] as num? ?? 0.0) * 100).toStringAsFixed(1)}%',
+            chefNote: map['instructions'] as String?,
+            imageUrl: map['image_url'] as String?,
           );
         }).toList();
       } else {

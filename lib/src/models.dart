@@ -66,6 +66,7 @@ class RecipeSuggestion {
     required this.ingredients,
     required this.matchReason,
     this.chefNote,
+    this.imageUrl,
   });
 
   final String? id;
@@ -74,6 +75,7 @@ class RecipeSuggestion {
   final List<String> ingredients;
   final String matchReason;
   final String? chefNote;  // Personal note from the app about this recipe
+  final String? imageUrl;  // URL to recipe image
 
   String get stableId {
     final raw = (id ?? title).toLowerCase().trim();
