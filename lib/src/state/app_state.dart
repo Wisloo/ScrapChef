@@ -153,6 +153,7 @@ OpenRouterService get classifierService => _classifierService;
         savedAt: DateTime.now(),
         chefNote: recipe.chefNote,
         userNotes: notes,
+        imageUrl: recipe.imageUrl,
       );
       _savedRecipes.insert(0, record);
       await _recipeStore.upsertRecipe(currentUserEmail!, record);
@@ -178,6 +179,13 @@ OpenRouterService get classifierService => _classifierService;
     _savedRecipes.removeWhere((saved) => saved.recipeId == recipeId);
     await _recipeStore.deleteRecipe(currentUserEmail!, recipeId);
     notifyListeners();
+  }
+
+  Stream<List<SavedRecipeRecord>> watchSavedRecipes() {
+    if (!isSignedIn || currentUserEmail == null) {
+      return Stream.value([]);
+    }
+    return _recipeStore.watchRecipes(currentUserEmail!);
   }
 
   void addBatchItems(List<String> labels, {String source = 'batch-scan'}) {

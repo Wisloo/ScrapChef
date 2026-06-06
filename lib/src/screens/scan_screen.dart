@@ -135,62 +135,126 @@ class _ScanScreenState extends State<ScanScreen> {
   Future<void> _showDetectionResultDialog(String predictedLabel) async {
     if (!mounted) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Food Scrap Detected',
-                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              const Icon(Icons.eco_rounded, size: 48, color: UIConstants.kSecondary),
-              const SizedBox(height: 16),
-              Text(
-                'Detected: $predictedLabel',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+    // Check if the detected label is "Unknown Scrap"
+    final isUnknown = predictedLabel.toLowerCase() == 'unknown scrap';
+
+    if (isUnknown) {
+      // Show dialog for unidentified scrap
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Unidentified Item',
+                  style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: UIConstants.kSecondary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                const SizedBox(height: 20),
+                const Icon(Icons.help_outline_rounded, size: 48, color: UIConstants.kAccent),
+                const SizedBox(height: 16),
+                Text(
+                  'Could not identify this item as a food scrap.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: UIConstants.kText.withAlpha(180),
                   ),
-                  child: const Text('Continue'),
+                  textAlign: TextAlign.center,
                 ),
-              ),
-            ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: UIConstants.kAccent,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text('Not a Scrap'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      widget.appState.handleAutoClassification(
-        predictedLabel,
-        confidence: 1.0,
       );
-      // HapticFeedback removed
-      Navigator.of(context).pop(widget.appState.lastOutcome);
+
+      if (!mounted) return;
+
+      // Don't store in bin, just return to camera
+      setState(() => _selectedImage = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Item not saved. Try scanning a food scrap.')),
+      );
+    } else {
+      // Normal flow for identified scraps
+      final confirmed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Food Scrap Detected',
+                  style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                const Icon(Icons.eco_rounded, size: 48, color: UIConstants.kSecondary),
+                const SizedBox(height: 16),
+                Text(
+                  'Detected: $predictedLabel',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: UIConstants.kSecondary,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text('Continue'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      if (confirmed == true && mounted) {
+        widget.appState.handleAutoClassification(
+          predictedLabel,
+          confidence: 1.0,
+        );
+        // HapticFeedback removed
+        Navigator.of(context).pop(widget.appState.lastOutcome);
+      }
     }
   }
 

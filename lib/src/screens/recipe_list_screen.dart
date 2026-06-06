@@ -197,94 +197,129 @@ class _RecipeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with image and similarity score
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary.withAlpha(120),
-                  Theme.of(context).colorScheme.secondary.withAlpha(80),
-                  Theme.of(context).scaffoldBackgroundColor,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
-              ),
-            ),
-            child: Stack(
-              children: [
-                // Recipe image or fallback
-                if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
-                    ),
-                    child: Image.network(
-                      recipe.imageUrl!,
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildFallbackHeader(context, emoji, recipe, similarityScore);
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                            color: Theme.of(context).colorScheme.primary,
+          // Image header
+          Stack(
+            children: [
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primary.withAlpha(120),
+                      Theme.of(context).colorScheme.primary.withAlpha(60),
+                      Theme.of(context).scaffoldBackgroundColor,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
+                        ),
+                        child: Image.network(
+                          recipe.imageUrl!,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).cardColor,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  emoji,
+                                  style: const TextStyle(fontSize: 48),
+                                ),
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).cardColor,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
+                                blurRadius: 16,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                    ),
-                  )
-                else
-                  _buildFallbackHeader(context, emoji, recipe, similarityScore),
-                // Similarity badge overlay
-                if (similarityScore != null)
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(240),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(25),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                          child: Text(
+                            emoji,
+                            style: const TextStyle(fontSize: 48),
                           ),
-                        ],
+                        ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.auto_awesome, size: 16, color: Theme.of(context).colorScheme.secondary),
-                          const SizedBox(width: 6),
-                          Text(
-                            '$similarityScore',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: Theme.of(context).colorScheme.secondary,
-                            ),
+              ),
+              // Similarity badge overlay
+              if (similarityScore != null)
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(240),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(25),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome, size: 16, color: Theme.of(context).colorScheme.secondary),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$similarityScore',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.secondary,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
           // Recipe title
           Padding(

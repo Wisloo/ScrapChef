@@ -1,0 +1,2 @@
+sbert_model/model.safetensors filter=lfs diff=lfs merge=lfs -text
+sbert_model/df_recipes_with_embeddings.parquet filter=lfs diff=lfs merge=lfs -text

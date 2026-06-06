@@ -140,10 +140,12 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
   /// Find recipes using the RAG API based on a natural language query.
 
-  Future<List<RecipeSuggestion>> findRecipes(String query, {int topK = 5}) async {
+  Future<List<RecipeSuggestion>> findRecipes(String query, {int topK = 5, List<String>? userIngredients}) async {
 
-    // Use local IP for device on same network
-    final uri = Uri.parse('http://192.168.100.3:8000/recommend');
+    print('🔍 findRecipes called with query: "$query"');
+
+    // Use Hugging Face Spaces URL
+    final uri = Uri.parse('https://wisloo-recipe-rag-api.hf.space/recommend');
 
     
 
@@ -157,7 +159,12 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
             headers: {'Content-Type': 'application/json'},
 
-            body: jsonEncode({'query': query, 'top_k': topK, 'use_scrap_mapping': true}),
+            body: jsonEncode({
+              'query': query, 
+              'top_k': topK, 
+              'use_scrap_mapping': true,
+              'user_ingredients': userIngredients ?? [],
+            }),
 
           )
 
@@ -170,8 +177,9 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
 
       if (response.statusCode == 200) {
-
+        print('✅ RAG API success: ${response.statusCode}');
         final data = jsonDecode(response.body) as List<dynamic>;
+        print('✅ RAG API returned ${data.length} recipes');
 
         
 
@@ -200,9 +208,8 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
         }).toList();
 
       } else {
-
-        print('Failed to find recipes: ${response.statusCode}');
-
+        print('❌ RAG API failed with status: ${response.statusCode}');
+        print('❌ Response body: ${response.body}');
         return [];
 
       }
@@ -237,11 +244,8 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
 
 
-    final labelQuery = labels.join(',');
-
-    final uri = Uri.parse('http://192.168.100.3:8000/recommendations/by_labels')
-
-        .replace(queryParameters: {'labels': labelQuery, 'n': n.toString()});
+    // Use RAG API endpoint
+    final uri = Uri.parse('http://192.168.100.3:8000/recommend-from-scraps');
 
 
 
@@ -249,11 +253,15 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
       final response = await http
 
-          .get(uri)
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'scraps': labels.toList(), 'top_k': n}),
+          )
 
-          .timeout(const Duration(seconds: 10), onTimeout: () {
+          .timeout(const Duration(seconds: 30), onTimeout: () {
 
-        throw TimeoutException('Request to backend timed out');
+        throw TimeoutException('Request to RAG API timed out');
 
       });
 
@@ -261,27 +269,27 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
       if (response.statusCode == 200) {
 
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = jsonDecode(response.body) as List<dynamic>;
 
-        final recs = data['recommendations'] as List<dynamic>;
-
-        return recs.map((e) {
+        return data.map((e) {
 
           final map = e as Map<String, dynamic>;
 
           return RecipeSuggestion(
 
-            id: map['recipe_id'].toString(),
+            id: map['title']?.toString(),
 
             title: map['title'] ?? '',
 
-            summary: map['summary'] ?? '',
+            summary: 'AI-recommended based on your scraps',
 
-            ingredients: List<String>.from(map['ingredients'] ?? []),
+            ingredients: (map['ingredients'] as String).split(',').map((s) => s.trim()).toList(),
 
-            matchReason: map['matchReason'] ?? '',
+            matchReason: 'Similarity: ${((map['similarity_score'] as num? ?? 0.0) * 100).toStringAsFixed(1)}%',
 
-            chefNote: map['chefNote'],
+            chefNote: map['instructions'] as String?,
+
+            imageUrl: map['image_url'] as String?,
 
           );
 
@@ -438,10 +446,11 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
     final backendRecipes = await fetchRecommendationsForLabels(normalized, n: 5);
 
     if (backendRecipes.isNotEmpty) {
-
+      print('✅ Using RAG API recipes: ${backendRecipes.length} recipes');
       return backendRecipes;
 
     }
+    print('❌ RAG API returned empty, trying MealDB...');
 
 
 
@@ -488,6 +497,7 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
     // If MealDB returned recipes, use them
 
     if (mealDBRecipes.isNotEmpty) {
+      print('✅ Using MealDB recipes: ${mealDBRecipes.length} recipes');
 
       // Remove duplicates and limit to top 5
 
@@ -508,7 +518,7 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
       // If we got some recipes but they seem unrelated, fallback to static
 
       if (uniqueRecipes.values.length < 2) {
-
+        print('❌ MealDB returned < 2 recipes, falling back to static');
         return _buildSuggestions(labels);
 
       }
@@ -522,7 +532,7 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
 
     // Fallback to static recipes
-
+    print('❌ MealDB failed, falling back to static recipes');
     return _buildSuggestions(labels);
 
   }

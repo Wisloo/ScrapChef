@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../state/app_state.dart';
 import '../constants/ui_constants.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.appState});
@@ -238,6 +239,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       Center(
                         child: TextButton(
                           onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => SignupScreen(appState: widget.appState),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'Create an account',
+                            style: TextStyle(
+                              color: UIConstants.kPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: TextButton(
+                          onPressed: () {
                             _emailController.text = 'demo@scrapchef.local';
                             _passwordController.text = 'demo123456';
                             _continue();
@@ -245,8 +265,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Text(
                             'Use demo login',
                             style: TextStyle(
-                              color: UIConstants.kPrimary,
-                              fontWeight: FontWeight.w700,
+                              color: UIConstants.kPrimary.withAlpha(180),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
                             ),
                           ),
                         ),

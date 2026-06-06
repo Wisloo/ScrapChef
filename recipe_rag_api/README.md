@@ -1,3 +1,13 @@
+---
+title: Recipe RAG API
+emoji: 🍳
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+license: mit
+---
+
 # Recipe RAG API
 
 A FastAPI-based recipe recommendation system using SBERT (Sentence-BERT) for semantic search and RAG (Retrieval-Augmented Generation) principles.
@@ -8,6 +18,7 @@ A FastAPI-based recipe recommendation system using SBERT (Sentence-BERT) for sem
 - **Scrap-to-Ingredient Mapping**: Automatically map kitchen scraps to their corresponding ingredients
 - **Cosine Similarity Retrieval**: Efficient recipe recommendation using pre-computed embeddings
 - **FastAPI Backend**: RESTful API with CORS support for easy integration
+- **LLM Verification**: Optional OpenRouter integration for recipe verification
 
 ## Setup
 
@@ -168,3 +179,53 @@ To enhance the RAG system:
 **Embedding column not found**: Check that the parquet file contains an embedding column (named 'embedding', 'embeddings', or similar)
 
 **CORS errors**: The API has CORS enabled for all origins. Adjust the middleware settings if needed.
+
+## Hugging Face Spaces Deployment
+
+This API can be deployed to Hugging Face Spaces for free hosting.
+
+### Deployment Steps:
+
+1. **Create a Hugging Face Space:**
+   - Go to https://huggingface.co/spaces
+   - Click "Create new Space"
+   - Choose "Docker" as the SDK
+   - Make it Public (free tier)
+   - Name it something like `recipe-rag-api`
+
+2. **Upload Files:**
+   - Upload all files from `recipe_rag_api/` directory to your Space:
+     - `main.py`
+     - `requirements.txt`
+     - `Dockerfile`
+     - `README.md`
+     - `sbert_model/` directory (with all model files)
+     - `.env` file (if using OpenRouter API key)
+
+3. **Configure Environment Variables:**
+   - In your Space settings, add `OPENROUTER_API_KEY` as a secret if using LLM verification
+
+4. **Wait for Build:**
+   - Hugging Face will automatically build and deploy your Docker container
+   - This may take 5-10 minutes on first build
+
+5. **Get Your Space URL:**
+   - Your API will be available at: `https://your-username-recipe-rag-api.hf.space`
+   - The API endpoints will be at:
+     - `https://your-username-recipe-rag-api.hf.space/recommend`
+     - `https://your-username-recipe-rag-api.hf.space/recommend-from-scraps`
+     - `https://your-username-recipe-rag-api.hf.space/health`
+
+6. **Update Flutter App:**
+   - In `lib/src/services/recipe_service.dart`, update the URL:
+   ```dart
+   final uri = Uri.parse('https://your-username-recipe-rag-api.hf.space/recommend');
+   ```
+   - Replace `your-username` with your actual Hugging Face username
+   - Replace `recipe-rag-api` with your actual Space name
+
+### Notes:
+- The free tier on Hugging Face Spaces has some limitations (CPU only, no GPU)
+- The SBERT model should work fine on CPU for this use case
+- If you need GPU for faster inference, you can upgrade to a paid Space
+- The Space will automatically sleep when not in use and wake up on request

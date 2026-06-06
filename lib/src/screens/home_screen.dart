@@ -9,6 +9,7 @@ import 'scan_screen.dart';
 import 'settings_screen.dart';
 import 'recipe_list_screen.dart';
 import 'bin_screen.dart';
+import 'saved_recipes_screen.dart';
 import '../widgets/animated_button.dart' as animated;
 import '../widgets/app_card.dart';
 import '../widgets/app_button.dart';
@@ -31,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen>
   late AnimationController _heroAnimationController;
   late Animation<double> _heroAnimation;
   final RecipeService _recipeService = RecipeService();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -110,13 +112,30 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  void _openSavedRecipes() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SavedRecipesScreen(
+          appState: widget.appState,
+        ),
+      ),
+    );
+  }
+
   Future<void> _openRecipes(List<String> labels) async {
+    setState(() {
+      _isLoading = true;
+    });
     SoundService.playClick();
-    
+
     // Use RAG API to find recipes based on natural language query
     final query = 'Recipes using ${labels.join(', ')}';
-    final recipes = await _recipeService.findRecipes(query);
-    
+    final recipes = await _recipeService.findRecipes(query, userIngredients: labels);
+
+    setState(() {
+      _isLoading = false;
+    });
+
     // Navigate to recipe list with RAG results
     if (mounted) {
       Navigator.of(context).push(
@@ -142,8 +161,10 @@ class _HomeScreenState extends State<HomeScreen>
       length: 2,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Column(
+        body: Stack(
           children: [
+            Column(
+              children: [
             // Fixed top section with logo and title (reduced height)
             Container(
               height: 100,
@@ -239,6 +260,7 @@ class _HomeScreenState extends State<HomeScreen>
                   itemsLogged: itemsLogged,
                   estimatedSavings: estimatedSavings,
                   onSettingsTap: _openSettings,
+                  onSavedRecipesTap: _openSavedRecipes,
                   appState: widget.appState,
                 ),
               ),
@@ -271,8 +293,34 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ],
         ),
-      ),
-    );
+        // Loading overlay
+        if (_isLoading)
+          Container(
+            color: Colors.black.withAlpha(128),
+            child: const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Finding recipes...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    ),
+  ),
+);
   }
 }
 
@@ -281,12 +329,14 @@ class _HeroHeader extends StatelessWidget {
     required this.itemsLogged,
     required this.estimatedSavings,
     required this.onSettingsTap,
+    required this.onSavedRecipesTap,
     required this.appState,
   });
 
   final int itemsLogged;
   final double estimatedSavings;
   final VoidCallback onSettingsTap;
+  final VoidCallback onSavedRecipesTap;
   final AppState appState;
 
   @override
@@ -310,72 +360,27 @@ class _HeroHeader extends StatelessWidget {
           children: <Widget>[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'Your kitchen companion',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme
-                                  .onSurface
-                                  .withAlpha(180),
-                              fontStyle: FontStyle.normal,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.1,
-                              height: 1.2,
-                            ),
-                        maxLines: 2,
-                        overflow: TextOverflow.visible,
-                      ),
-                    ],
+                  child: Text(
+                    'Your kitchen companion',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme
+                              .onSurface
+                              .withAlpha(180),
+                          fontStyle: FontStyle.normal,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.1,
+                          height: 1.2,
+                        ),
+                    maxLines: 2,
+                    overflow: TextOverflow.visible,
                   ),
                 ),
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Theme.of(context).colorScheme.primary,
-                            Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withOpacity(0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.restaurant, size: 18, color: Theme.of(context).colorScheme.onPrimary),
-                          const SizedBox(width: 6),
-                          Text(
-                            '$itemsLogged',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 20,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
                     animated.AnimatedIconButton(
                       onPressed: () {
                         Navigator.of(context).push(
@@ -388,6 +393,14 @@ class _HeroHeader extends StatelessWidget {
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       iconColor: Theme.of(context).colorScheme.onPrimary,
                       size: 56,
+                    ),
+                    const SizedBox(width: 8),
+                    animated.AnimatedIconButton(
+                      onPressed: onSavedRecipesTap,
+                      icon: Icons.bookmark_border_rounded,
+                      backgroundColor: Theme.of(context).cardColor,
+                      iconColor: Theme.of(context).colorScheme.onSurface,
+                      size: 48,
                     ),
                     const SizedBox(width: 8),
                     animated.AnimatedIconButton(

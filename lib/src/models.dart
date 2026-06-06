@@ -93,6 +93,7 @@ class SavedRecipeRecord {
     required this.savedAt,
     this.chefNote,
     this.userNotes,
+    this.imageUrl,
   });
 
   final String recipeId;
@@ -103,6 +104,7 @@ class SavedRecipeRecord {
   final DateTime savedAt;
   final String? chefNote;
   final String? userNotes;
+  final String? imageUrl;
 
   SavedRecipeRecord copyWith({
     String? title,
@@ -112,6 +114,7 @@ class SavedRecipeRecord {
     DateTime? savedAt,
     String? chefNote,
     String? userNotes,
+    String? imageUrl,
   }) {
     return SavedRecipeRecord(
       recipeId: recipeId,
@@ -122,6 +125,7 @@ class SavedRecipeRecord {
       savedAt: savedAt ?? this.savedAt,
       chefNote: chefNote ?? this.chefNote,
       userNotes: userNotes ?? this.userNotes,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 
@@ -135,6 +139,7 @@ class SavedRecipeRecord {
       'savedAt': savedAt.toIso8601String(),
       'chefNote': chefNote,
       'userNotes': userNotes,
+      'imageUrl': imageUrl,
     };
   }
 
@@ -148,6 +153,7 @@ class SavedRecipeRecord {
       savedAt: DateTime.tryParse(json['savedAt'] as String? ?? '') ?? DateTime.now(),
       chefNote: json['chefNote'] as String?,
       userNotes: json['userNotes'] as String?,
+      imageUrl: json['imageUrl'] as String?,
     );
   }
 }

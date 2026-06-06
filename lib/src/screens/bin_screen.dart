@@ -23,6 +23,7 @@ class BinScreen extends StatefulWidget {
 class _BinScreenState extends State<BinScreen> {
   final Set<String> _selectedItems = {};
   final RecipeService _recipeService = RecipeService();
+  bool _isLoading = false;
 
   String _itemKey(ScrapItem item) {
     return item.id ?? '${item.label}_${item.loggedAt.millisecondsSinceEpoch}';
@@ -46,17 +47,28 @@ class _BinScreenState extends State<BinScreen> {
   }
 
   Future<void> _findRecipesForSelected() async {
+    print('🔵 _findRecipesForSelected called');
     if (_selectedItems.isNotEmpty) {
+      setState(() {
+        _isLoading = true;
+      });
       SoundService.playClick();
       final labels = widget.appState.inventory
           .where((item) => _selectedItems.contains(_itemKey(item)))
           .map((item) => item.label)
           .toList();
-      
+      print('🔵 Labels: $labels');
+
       // Use RAG API to find recipes based on natural language query
       final query = 'Recipes using ${labels.join(', ')}';
-      final recipes = await _recipeService.findRecipes(query);
-      
+      print('🔵 Query: $query');
+      final recipes = await _recipeService.findRecipes(query, userIngredients: labels);
+      print('🔵 Got ${recipes.length} recipes');
+
+      setState(() {
+        _isLoading = false;
+      });
+
       // Navigate to recipe list with RAG results
       if (mounted) {
         Navigator.of(context).push(
@@ -74,13 +86,20 @@ class _BinScreenState extends State<BinScreen> {
 
   Future<void> _findRecipesForAll() async {
     if (widget.appState.inventory.isNotEmpty) {
+      setState(() {
+        _isLoading = true;
+      });
       SoundService.playClick();
       final labels = widget.appState.inventory.map((item) => item.label).toList();
-      
+
       // Use RAG API to find recipes based on natural language query
       final query = 'Recipes using ${labels.join(', ')}';
-      final recipes = await _recipeService.findRecipes(query);
-      
+      final recipes = await _recipeService.findRecipes(query, userIngredients: labels);
+
+      setState(() {
+        _isLoading = false;
+      });
+
       // Navigate to recipe list with RAG results
       if (mounted) {
         Navigator.of(context).push(
@@ -146,10 +165,12 @@ class _BinScreenState extends State<BinScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Header with item count and actions
-          Padding(
+          Column(
+            children: [
+              // Header with item count and actions
+              Padding(
             padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
             child: Row(
               children: [
@@ -355,6 +376,32 @@ class _BinScreenState extends State<BinScreen> {
           ),
         ],
       ),
+        // Loading overlay
+        if (_isLoading)
+          Container(
+            color: Colors.black.withAlpha(128),
+            child: const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Finding recipes...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    ),
     );
   }
 }
