@@ -187,6 +187,11 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
           final map = e as Map<String, dynamic>;
 
+          final ingredients = (map['ingredients'] as String).split(',').map((s) => s.trim()).toList();
+          
+          // Estimate ingredient weights if not provided by API
+          final estimatedWeights = _estimateIngredientWeights(ingredients);
+
           return RecipeSuggestion(
 
             id: map['title']?.toString(),
@@ -195,13 +200,15 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
             summary: 'AI-recommended based on your query',
 
-            ingredients: (map['ingredients'] as String).split(',').map((s) => s.trim()).toList(),
+            ingredients: ingredients,
 
             matchReason: 'Similarity: ${((map['similarity_score'] as num? ?? 0.0) * 100).toStringAsFixed(1)}%',
 
             chefNote: map['instructions'] as String?,
 
             imageUrl: map['image_url'] as String?,
+
+            ingredientWeights: estimatedWeights,
 
           );
 
@@ -275,6 +282,9 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
           final map = e as Map<String, dynamic>;
 
+          final ingredients = (map['ingredients'] as String).split(',').map((s) => s.trim()).toList();
+          final estimatedWeights = _estimateIngredientWeights(ingredients);
+
           return RecipeSuggestion(
 
             id: map['title']?.toString(),
@@ -283,13 +293,15 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
             summary: 'AI-recommended based on your scraps',
 
-            ingredients: (map['ingredients'] as String).split(',').map((s) => s.trim()).toList(),
+            ingredients: ingredients,
 
             matchReason: 'Similarity: ${((map['similarity_score'] as num? ?? 0.0) * 100).toStringAsFixed(1)}%',
 
             chefNote: map['instructions'] as String?,
 
             imageUrl: map['image_url'] as String?,
+
+            ingredientWeights: estimatedWeights,
 
           );
 
@@ -538,6 +550,76 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
   }
 
 
+
+  /// Estimate ingredient weights based on ingredient names
+  Map<String, double> _estimateIngredientWeights(List<String> ingredients) {
+    final weights = <String, double>{};
+    
+    // Common ingredient weight estimates (in grams)
+    const weightEstimates = {
+      'banana': 150.0,
+      'banana peel': 150.0,
+      'orange': 100.0,
+      'orange peel': 100.0,
+      'lemon': 80.0,
+      'lemon peel': 80.0,
+      'lime': 60.0,
+      'apple': 150.0,
+      'apple core': 100.0,
+      'apple peel': 100.0,
+      'potato': 150.0,
+      'potato peel': 150.0,
+      'carrot': 100.0,
+      'carrot peel': 100.0,
+      'onion': 100.0,
+      'onion skin': 100.0,
+      'tomato': 100.0,
+      'broccoli': 200.0,
+      'broccoli stem': 200.0,
+      'cabbage': 200.0,
+      'cabbage core': 200.0,
+      'cauliflower': 200.0,
+      'cauliflower core': 200.0,
+      'cucumber': 100.0,
+      'cucumber peel': 100.0,
+      'leafy greens': 100.0,
+      'spinach': 100.0,
+      'lettuce': 100.0,
+      'beans': 150.0,
+      'bean pod': 150.0,
+      'corn': 150.0,
+      'corn husk': 50.0,
+      'egg': 50.0,
+      'eggshells': 50.0,
+      'coffee': 50.0,
+      'coffee grounds': 50.0,
+      'citrus': 100.0,
+      'citrus peel': 100.0,
+      'vegetable': 150.0,
+      'vegetable scraps': 150.0,
+      'fruit': 150.0,
+      'fruit scraps': 150.0,
+    };
+    
+    for (final ingredient in ingredients) {
+      final lowerIngredient = ingredient.toLowerCase();
+      
+      // Try to find a matching weight estimate
+      for (final entry in weightEstimates.entries) {
+        if (lowerIngredient.contains(entry.key)) {
+          weights[ingredient] = entry.value;
+          break;
+        }
+      }
+      
+      // If no match found, use a default estimate
+      if (!weights.containsKey(ingredient)) {
+        weights[ingredient] = 100.0; // Default 100g
+      }
+    }
+    
+    return weights;
+  }
 
   /// Map scrap labels to MealDB-compatible ingredient names
 
@@ -795,6 +877,8 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
       chefNote: recipe.chefNote,
 
+      ingredientWeights: recipe.ingredientWeights,
+
     );
 
   }
@@ -802,6 +886,8 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
 
 
   RecipeSuggestion _mealDBToSuggestion(MealDBRecipe meal, String matchedIngredient) {
+    final ingredientNames = meal.ingredients.map((ing) => ing.name).toList();
+    final estimatedWeights = _estimateIngredientWeights(ingredientNames);
 
     return RecipeSuggestion(
 
@@ -816,6 +902,8 @@ Future<List<RecipeSuggestion>> fetchSimilarRecipes(String recipeId, {int n = 5})
       matchReason: 'Contains $matchedIngredient',
 
       chefNote: meal.instructions,
+
+      ingredientWeights: estimatedWeights,
 
     );
 
@@ -1117,6 +1205,8 @@ class _RecipeProfile {
 
     this.chefNote,
 
+    this.ingredientWeights,
+
   });
 
 
@@ -1132,6 +1222,8 @@ class _RecipeProfile {
   final Set<String> keywords;
 
   final String? chefNote;
+
+  final Map<String, double>? ingredientWeights;
 
 }
 
@@ -1153,6 +1245,8 @@ const List<_RecipeProfile> _recipes = [
 
     chefNote: 'Step 1: Rinse peels thoroughly and remove white pith. Step 2: Simmer peels with 1 cup water for 10 minutes. Step 3: Add sugar (1:1 ratio), simmer 5 more minutes. Step 4: Cool and strain. Store refrigerated for up to 2 weeks.',
 
+    ingredientWeights: {'citrus peels': 100.0},
+
   ),
 
   _RecipeProfile(
@@ -1168,6 +1262,8 @@ const List<_RecipeProfile> _recipes = [
     keywords: {'banana_peel', 'banana', 'muffin'},
 
     chefNote: 'Step 1: Steam or boil peels for 10 minutes until soft. Step 2: Blend cooked peels into a smooth paste. Step 3: Mix with wet ingredients (eggs, vanilla). Step 4: Fold into dry ingredients. Step 5: Bake at 375°F for 20-25 minutes.',
+
+    ingredientWeights: {'banana peels': 150.0},
 
   ),
 
@@ -1185,6 +1281,8 @@ const List<_RecipeProfile> _recipes = [
 
     chefNote: 'Step 1: Peel outer fibrous layer from stems. Step 2: Cut into matchsticks or thin slices. Step 3: Heat oil in wok, add garlic and ginger. Step 4: Stir-fry stems 3-4 minutes until tender-crisp. Step 5: Add sauce and serve immediately.',
 
+    ingredientWeights: {'broccoli stems': 200.0},
+
   ),
 
   _RecipeProfile(
@@ -1200,6 +1298,8 @@ const List<_RecipeProfile> _recipes = [
     keywords: {'potato_peel', 'potato', 'chips', 'crispy'},
 
     chefNote: 'Step 1: Rinse peels thoroughly and pat dry. Step 2: Toss with oil and seasonings. Step 3: Arrange in single layer on baking sheet. Step 4: Bake at 400°F for 15-20 minutes, flip halfway. Step 5: Cool 5 minutes until crisp.',
+
+    ingredientWeights: {'potato peels': 150.0},
 
   ),
 
@@ -1217,6 +1317,8 @@ const List<_RecipeProfile> _recipes = [
 
     chefNote: 'Step 1: Collect and rinse skins/husks. Step 2: Bring 8 cups water to boil with skins. Step 3: Reduce heat, simmer 30 minutes. Step 4: Add aromatics for last 10 minutes. Step 5: Strain through fine mesh, cool, refrigerate.',
 
+    ingredientWeights: {'onion skins': 100.0, 'corn husks': 50.0},
+
   ),
 
   _RecipeProfile(
@@ -1232,6 +1334,8 @@ const List<_RecipeProfile> _recipes = [
     keywords: {'leafy_trimmings', 'spinach', 'lettuce', 'pesto'},
 
     chefNote: 'Step 1: Blanch leafy greens for 30 seconds, then ice bath. Step 2: Squeeze out excess water. Step 3: Blend with nuts, garlic, and lemon juice. Step 4: Slowly add oil while blending. Step 5: Season and use immediately or store refrigerated.',
+
+    ingredientWeights: {'leafy trimmings': 100.0},
 
   ),
 

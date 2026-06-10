@@ -8,6 +8,7 @@ import '../services/firebase_scrap_store.dart';
 import '../services/openrouter_service.dart' show OpenRouterService;
 import '../services/recipe_service.dart';
 import '../services/sound_service.dart';
+import '../services/mqtt_service.dart';
 import 'package:flutter/foundation.dart';
 
 class AppState extends ChangeNotifier {
@@ -29,7 +30,9 @@ final OpenRouterService _classifierService;
   final FirebaseAuthService _authService;
   final FirebaseRecipeStore _recipeStore;
   final FirebaseScrapStore _scrapStore;
+  final MqttService _mqttService = MqttService();
   StreamSubscription<List<ScrapItem>>? _scrapSubscription;
+  StreamSubscription<double>? _weightSubscription;
 
 OpenRouterService get classifierService => _classifierService;
   RecipeService get recipeService => _recipeService;
@@ -42,6 +45,8 @@ OpenRouterService get classifierService => _classifierService;
   bool _isBootstrapping = true;
   bool _isLoadingRecipes = false;
   bool _authFailed = false;
+  double? _currentWeight;
+  DateTime? _binClearedAt; // Track when the bin was last cleared
   
   // Track recent items to prevent duplicates
   final Map<String, DateTime> _recentlyAddedItems = <String, DateTime>{};
@@ -55,11 +60,26 @@ OpenRouterService get classifierService => _classifierService;
   bool get isLoadingRecipes => _isLoadingRecipes;
   ScanOutcome? get lastOutcome => _lastOutcome;
   List<SavedRecipeRecord> get savedRecipes => List.unmodifiable(_savedRecipes);
+  double? get currentWeight => _currentWeight;
 
   double get divertedWasteKg {
     return _inventory
         .where((item) => item.weightGrams != null)
         .fold(0.0, (sum, item) => sum + (item.weightGrams ?? 0.0)) / 1000.0;
+  }
+
+  Map<String, double> get weightByScrapType {
+    final weights = <String, double>{};
+    for (final item in _inventory) {
+      if (item.weightGrams != null) {
+        // Only count items added after the bin was last cleared
+        if (_binClearedAt == null || item.loggedAt.isAfter(_binClearedAt!)) {
+          final label = item.label.toLowerCase();
+          weights[label] = (weights[label] ?? 0.0) + item.weightGrams!;
+        }
+      }
+    }
+    return weights;
   }
 
   double get estimatedSavings {
@@ -196,6 +216,7 @@ OpenRouterService get classifierService => _classifierService;
         label: label,
         confidence: 1.0,
         source: source,
+        weightGrams: _currentWeight,
       );
     }
 
@@ -229,12 +250,13 @@ OpenRouterService get classifierService => _classifierService;
         label: outcome.predictedLabel,
         confidence: outcome.confidence,
         source: 'auto-scan',
+        weightGrams: _currentWeight,
       );
 
       _latestBatchLabels
         ..clear()
         ..add(outcome.predictedLabel);
-      
+
       SoundService.playSuccess();
     }
 
@@ -254,12 +276,13 @@ OpenRouterService get classifierService => _classifierService;
       confidence: confidence,
       source: 'manual-verification',
       manualCorrection: true,
+      weightGrams: _currentWeight,
     );
 
     _latestBatchLabels
       ..clear()
       ..add(label);
-    
+
     SoundService.playSuccess();
     notifyListeners();
   }
@@ -281,6 +304,7 @@ OpenRouterService get classifierService => _classifierService;
         label: label,
         confidence: confidence,
         source: 'auto-scan',
+        weightGrams: _currentWeight,
       );
 
       _latestBatchLabels
@@ -306,6 +330,7 @@ OpenRouterService get classifierService => _classifierService;
   void clearBin() {
     _inventory.clear();
     _latestBatchLabels.clear();
+    _binClearedAt = DateTime.now(); // Mark when bin was cleared
     
     if (_authService.isSignedIn && _authService.userId != null) {
       _scrapStore.clearAllScraps(_authService.userId!).catchError((e) {
@@ -338,6 +363,9 @@ OpenRouterService get classifierService => _classifierService;
 
   Future<void> _bootstrap() async {
     try {
+      // Initialize bin cleared timestamp to now (treat all existing items as current)
+      _binClearedAt = DateTime.now();
+      
       final Completer<void> authCompleter = Completer<void>();
       _authService.authStateChanges.listen((user) {
         if (!authCompleter.isCompleted) {
@@ -351,6 +379,7 @@ OpenRouterService get classifierService => _classifierService;
           _scrapSubscription = null;
           _inventory.clear();
           _savedRecipes.clear();
+          _binClearedAt = DateTime.now(); // Reset timestamp on sign out
           notifyListeners();
         }
       });
@@ -369,6 +398,13 @@ OpenRouterService get classifierService => _classifierService;
         _reloadSavedRecipes();
         _setupScrapListener(_authService.userId!);
       }
+
+      // Initialize MQTT connection
+      _mqttService.connect();
+      _weightSubscription = _mqttService.weightStream.listen((weight) {
+        _currentWeight = weight;
+        notifyListeners();
+      });
 
       print("GeminiService initialized successfully.");
     } catch (e) {

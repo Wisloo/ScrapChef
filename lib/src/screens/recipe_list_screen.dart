@@ -10,11 +10,13 @@ class RecipeListScreen extends StatefulWidget {
     required this.appState,
     required this.labels,
     this.ragRecipes,
+    this.selectedItemKeys,
   });
 
   final AppState appState;
   final List<String> labels;
   final List<RecipeSuggestion>? ragRecipes;
+  final List<String>? selectedItemKeys;
 
   @override
   State<RecipeListScreen> createState() => _RecipeListScreenState();
@@ -47,6 +49,14 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
           isLoading = false;
         });
       }
+    }
+
+    // If no recipes found and inventory is empty, show fallback recipes for testing
+    if (mounted && recipes.isEmpty && widget.labels.isEmpty) {
+      setState(() {
+        recipes = widget.appState.recipeService.suggest([]);
+        isLoading = false;
+      });
     }
   }
 
@@ -147,11 +157,13 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
                               builder: (_) => RecipeDetailScreen(
                                 recipe: recipe,
                                 appState: widget.appState,
+                                selectedLabels: widget.labels,
+                                selectedItemKeys: widget.selectedItemKeys,
                               ),
                             ),
                           );
                         },
-                        child: _RecipeCard(recipe: recipe, index: index, appState: widget.appState),
+                        child: _RecipeCard(recipe: recipe, index: index, appState: widget.appState, labels: widget.labels, selectedItemKeys: widget.selectedItemKeys),
                       ),
                     );
                   },
@@ -161,11 +173,101 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
 }
 
 class _RecipeCard extends StatelessWidget {
-  const _RecipeCard({required this.recipe, required this.index, required this.appState});
+  const _RecipeCard({required this.recipe, required this.index, required this.appState, required this.labels, required this.selectedItemKeys});
 
   final RecipeSuggestion recipe;
   final int index;
   final AppState appState;
+  final List<String> labels;
+  final List<String>? selectedItemKeys;
+
+  /// Mapping from scrap types to their base ingredient names
+  static const Map<String, String> _scrapToBaseIngredient = {
+    'carrot peel': 'carrot',
+    'carrot peels': 'carrot',
+    'potato peel': 'potato',
+    'potato peels': 'potato',
+    'potato skin': 'potato',
+    'potato skins': 'potato',
+    'onion skin': 'onion',
+    'onion skins': 'onion',
+    'banana peel': 'banana',
+    'banana peels': 'banana',
+    'orange peel': 'orange',
+    'orange peels': 'orange',
+    'lemon peel': 'lemon',
+    'lemon peels': 'lemon',
+    'apple core': 'apple',
+    'apple core & peel': 'apple',
+    'apple peel': 'apple',
+    'apple peels': 'apple',
+    'broccoli stem': 'broccoli',
+    'broccoli stems': 'broccoli',
+    'cabbage core': 'cabbage',
+    'cauliflower core': 'cauliflower',
+    'cucumber peel': 'cucumber',
+    'cucumber peels': 'cucumber',
+    'tomato trimmings': 'tomato',
+    'leafy trimmings': 'leafy greens',
+    'bean pod': 'bean',
+    'bean pods': 'bean',
+    'corn husk': 'corn',
+  };
+
+  /// Get the base ingredient name for a scrap type
+  String _getBaseIngredient(String scrapType) {
+    final scrapLower = scrapType.toLowerCase().trim();
+    return _scrapToBaseIngredient[scrapLower] ?? scrapLower;
+  }
+
+  /// Check if user has ingredients available
+  Map<String, dynamic> _checkOverallAvailability() {
+    // Use the selected labels passed to this widget, not the entire inventory
+    final selectedLabels = labels.map((l) => l.toLowerCase().trim()).toSet();
+    final ingredients = recipe.ingredients;
+    
+    if (ingredients.isEmpty) {
+      return {'availableCount': 0, 'totalCount': 0};
+    }
+
+    int availableCount = 0;
+    int totalCount = ingredients.length;
+
+    for (final ingredient in ingredients) {
+      final ingredientLower = ingredient.toLowerCase().trim();
+      
+      // Check if any selected scrap type matches this ingredient
+      bool hasMatch = false;
+      for (final scrapLabel in selectedLabels) {
+        final baseIngredient = _getBaseIngredient(scrapLabel);
+        
+        // Check for exact match
+        if (scrapLabel == ingredientLower || baseIngredient == ingredientLower) {
+          hasMatch = true;
+          break;
+        }
+        // Check if scrap contains ingredient (e.g., "carrot peels" contains "carrot")
+        if (scrapLabel.contains(ingredientLower) || ingredientLower.contains(scrapLabel)) {
+          hasMatch = true;
+          break;
+        }
+        // Check if base ingredient contains ingredient or vice versa
+        if (baseIngredient.contains(ingredientLower) || ingredientLower.contains(baseIngredient)) {
+          hasMatch = true;
+          break;
+        }
+      }
+      
+      if (hasMatch) {
+        availableCount++;
+      }
+    }
+
+    return {
+      'availableCount': availableCount,
+      'totalCount': totalCount,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -176,6 +278,11 @@ class _RecipeCard extends StatelessWidget {
     // Parse match reason to extract similarity score
     final similarityMatch = RegExp(r'(\d+\.?\d*)%').firstMatch(recipe.matchReason);
     final similarityScore = similarityMatch != null ? similarityMatch.group(1) : null;
+    
+    // Check ingredient availability
+    final availability = _checkOverallAvailability();
+    final availableCount = availability['availableCount'] as int;
+    final totalCount = availability['totalCount'] as int;
 
     return Container(
       decoration: BoxDecoration(
@@ -319,6 +426,44 @@ class _RecipeCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              // Availability badge overlay
+              Positioned(
+                top: 16,
+                left: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withAlpha(240),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.shopping_basket,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$availableCount/$totalCount',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
           // Recipe title
@@ -405,6 +550,8 @@ class _RecipeCard extends StatelessWidget {
                       builder: (_) => RecipeDetailScreen(
                         recipe: recipe,
                         appState: appState,
+                        selectedLabels: labels,
+                        selectedItemKeys: selectedItemKeys,
                       ),
                     ),
                   );

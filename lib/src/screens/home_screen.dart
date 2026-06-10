@@ -256,12 +256,18 @@ class _HomeScreenState extends State<HomeScreen>
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: FadeTransition(
                 opacity: _heroAnimation,
-                child: _HeroHeader(
-                  itemsLogged: itemsLogged,
-                  estimatedSavings: estimatedSavings,
-                  onSettingsTap: _openSettings,
-                  onSavedRecipesTap: _openSavedRecipes,
-                  appState: widget.appState,
+                child: Column(
+                  children: [
+                    _HeroHeader(
+                      itemsLogged: itemsLogged,
+                      estimatedSavings: estimatedSavings,
+                      onSettingsTap: _openSettings,
+                      onSavedRecipesTap: _openSavedRecipes,
+                      appState: widget.appState,
+                    ),
+                    const SizedBox(height: 12),
+                    _WeightDisplay(currentWeight: widget.appState.currentWeight),
+                  ],
                 ),
               ),
             ),
@@ -562,6 +568,84 @@ class _ActionPanel extends StatelessWidget {
         text: 'Open camera',
         onPressed: onScan,
         elevation: 2,
+      ),
+    );
+  }
+}
+
+class _WeightDisplay extends StatelessWidget {
+  const _WeightDisplay({required this.currentWeight});
+
+  final double? currentWeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary.withAlpha(8),
+              Theme.of(context).colorScheme.secondary.withAlpha(4),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withAlpha(16),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.scale_outlined,
+                size: 24,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Current Weight',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    currentWeight != null ? '${currentWeight!.toStringAsFixed(1)} g' : 'No data',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            if (currentWeight != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondary.withAlpha(16),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.sensors,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -962,12 +1046,42 @@ class _InventoryTile extends StatelessWidget {
 }
 
 class _RecipeTile extends StatelessWidget {
-  const _RecipeTile({required this.recipe});
+  const _RecipeTile({required this.recipe, required this.appState, this.scrapItem});
 
   final RecipeSuggestion recipe;
+  final AppState appState;
+  final ScrapItem? scrapItem;
 
   @override
   Widget build(BuildContext context) {
+    // Calculate if user has enough weight for the recipe based on the specific scrap
+    bool isRecipeSufficient = true;
+    String? insufficientIngredient;
+    double? requiredWeight;
+    double? availableWeight;
+
+    if (recipe.ingredientWeights != null && scrapItem != null) {
+      final scrapLabel = scrapItem!.label.toLowerCase();
+      final scrapWeight = scrapItem!.weightGrams ?? 0.0;
+
+      for (final entry in recipe.ingredientWeights!.entries) {
+        final ingredient = entry.key;
+        final requirement = entry.value;
+
+        // Check if this recipe ingredient matches the scrap type
+        if (ingredient.toLowerCase().contains(scrapLabel) || scrapLabel.contains(ingredient.toLowerCase())) {
+          // Compare the specific scrap's weight to the recipe requirement
+          if (scrapWeight < requirement) {
+            isRecipeSufficient = false;
+            insufficientIngredient = ingredient;
+            requiredWeight = requirement;
+            availableWeight = scrapWeight;
+            break;
+          }
+        }
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -985,36 +1099,40 @@ class _RecipeTile extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  recipe.title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                        letterSpacing: -0.3,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        recipe.title,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                              letterSpacing: -0.3,
+                            ),
                       ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondary
+                            .withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.restaurant_menu,
+                          size: 18, color: UIConstants.kSecondary),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondary
-                      .withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.restaurant_menu,
-                    size: 18, color: UIConstants.kSecondary),
-              ),
-            ],
-          ),
           const SizedBox(height: 12),
           Text(
             recipe.summary,
@@ -1028,6 +1146,7 @@ class _RecipeTile extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: recipe.ingredients
+                .take(3)
                 .map(
                   (ingredient) => Container(
                     padding: const EdgeInsets.symmetric(
@@ -1137,6 +1256,49 @@ class _RecipeTile extends StatelessWidget {
               ),
             ),
           ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Weight sufficiency badge on the side
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isRecipeSufficient
+                  ? Theme.of(context).colorScheme.secondary.withAlpha(20)
+                  : Theme.of(context).colorScheme.error.withAlpha(15),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isRecipeSufficient
+                    ? Theme.of(context).colorScheme.secondary.withAlpha(40)
+                    : Theme.of(context).colorScheme.error.withAlpha(30),
+                width: 1.5,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isRecipeSufficient ? Icons.check_circle_outline : Icons.error_outline,
+                  size: 20,
+                  color: isRecipeSufficient
+                      ? Theme.of(context).colorScheme.secondary
+                      : Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isRecipeSufficient ? 'Enough' : 'Not Enough',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: isRecipeSufficient
+                        ? Theme.of(context).colorScheme.secondary
+                        : Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1273,7 +1435,7 @@ class _RecipeSuggestionsSection extends StatelessWidget {
         children: [
           ...recipeSuggestions.take(3).map((recipe) => Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: _RecipeTile(recipe: recipe),
+            child: _RecipeTile(recipe: recipe, appState: appState, scrapItem: appState.inventory.isNotEmpty ? appState.inventory.last : null),
           )),
           if (recipeSuggestions.length > 3)
             TextButton(

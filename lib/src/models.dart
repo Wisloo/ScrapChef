@@ -23,6 +23,7 @@ class ScrapItem {
     required this.source,
     required this.confidence,
     this.manualCorrection = false,
+    this.isEnoughWeight,
   });
 
   final String? id;
@@ -32,6 +33,14 @@ class ScrapItem {
   final String source;  // 'camera', 'manual-entry', or 'manual-verification'
   final double confidence;
   final bool manualCorrection;
+  final bool? isEnoughWeight;  // Whether weight meets threshold (100g)
+
+  static const double weightThreshold = 100.0;  // Minimum weight in grams
+
+  bool get hasEnoughWeight {
+    if (weightGrams == null) return false;
+    return weightGrams! >= weightThreshold;
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -42,6 +51,7 @@ class ScrapItem {
       'source': source,
       'confidence': confidence,
       'manualCorrection': manualCorrection,
+      'isEnoughWeight': isEnoughWeight,
     };
   }
 
@@ -54,6 +64,7 @@ class ScrapItem {
       source: json['source'] as String? ?? '',
       confidence: json['confidence'] as double? ?? 0.0,
       manualCorrection: json['manualCorrection'] as bool? ?? false,
+      isEnoughWeight: json['isEnoughWeight'] as bool?,
     );
   }
 }
@@ -67,6 +78,7 @@ class RecipeSuggestion {
     required this.matchReason,
     this.chefNote,
     this.imageUrl,
+    this.ingredientWeights,
   });
 
   final String? id;
@@ -76,6 +88,7 @@ class RecipeSuggestion {
   final String matchReason;
   final String? chefNote;  // Personal note from the app about this recipe
   final String? imageUrl;  // URL to recipe image
+  final Map<String, double>? ingredientWeights;  // Required weight per ingredient in grams
 
   String get stableId {
     final raw = (id ?? title).toLowerCase().trim();

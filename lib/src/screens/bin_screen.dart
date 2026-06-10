@@ -53,11 +53,12 @@ class _BinScreenState extends State<BinScreen> {
         _isLoading = true;
       });
       SoundService.playClick();
-      final labels = widget.appState.inventory
+      final selectedItems = widget.appState.inventory
           .where((item) => _selectedItems.contains(_itemKey(item)))
-          .map((item) => item.label)
           .toList();
+      final labels = selectedItems.map((item) => item.label).toList();
       print('🔵 Labels: $labels');
+      print('🔵 Selected item keys: $_selectedItems');
 
       // Use RAG API to find recipes based on natural language query
       final query = 'Recipes using ${labels.join(', ')}';
@@ -77,6 +78,7 @@ class _BinScreenState extends State<BinScreen> {
               appState: widget.appState,
               labels: labels,
               ragRecipes: recipes,
+              selectedItemKeys: _selectedItems.toList(),
             ),
           ),
         );
@@ -91,6 +93,7 @@ class _BinScreenState extends State<BinScreen> {
       });
       SoundService.playClick();
       final labels = widget.appState.inventory.map((item) => item.label).toList();
+      final allItemKeys = widget.appState.inventory.map((item) => _itemKey(item)).toList();
 
       // Use RAG API to find recipes based on natural language query
       final query = 'Recipes using ${labels.join(', ')}';
@@ -108,6 +111,7 @@ class _BinScreenState extends State<BinScreen> {
               appState: widget.appState,
               labels: labels,
               ragRecipes: recipes,
+              selectedItemKeys: allItemKeys,
             ),
           ),
         );
@@ -450,6 +454,15 @@ class _InventoryTile extends StatelessWidget {
             fontSize: 15,
           ),
         ),
+        subtitle: item.weightGrams != null
+            ? Text(
+                '${item.weightGrams!.toStringAsFixed(0)}g',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
+                  fontSize: 13,
+                ),
+              )
+            : null,
         trailing: IconButton(
           icon: Icon(Icons.delete_outline, 
               color: Theme.of(context).colorScheme.onSurface.withAlpha(120)),

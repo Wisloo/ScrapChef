@@ -9,19 +9,120 @@ import '../constants/ui_constants.dart';
 import '../services/recipe_service.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
-  const RecipeDetailScreen({super.key, required this.recipe, required this.appState});
+  const RecipeDetailScreen({super.key, required this.recipe, required this.appState, this.selectedLabels, this.selectedItemKeys});
 
   final RecipeSuggestion recipe;
   final AppState appState;
+  final List<String>? selectedLabels;
+  final List<String>? selectedItemKeys;
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
 }
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
+  String _itemKey(ScrapItem item) {
+    return item.id ?? '${item.label}_${item.loggedAt.millisecondsSinceEpoch}';
+  }
+
   @override
   void initState() {
     super.initState();
+  }
+
+  /// Mapping from scrap types to their base ingredient names
+  static const Map<String, String> _scrapToBaseIngredient = {
+    'carrot peel': 'carrot',
+    'carrot peels': 'carrot',
+    'potato peel': 'potato',
+    'potato peels': 'potato',
+    'potato skin': 'potato',
+    'potato skins': 'potato',
+    'onion skin': 'onion',
+    'onion skins': 'onion',
+    'banana peel': 'banana',
+    'banana peels': 'banana',
+    'orange peel': 'orange',
+    'orange peels': 'orange',
+    'lemon peel': 'lemon',
+    'lemon peels': 'lemon',
+    'apple core': 'apple',
+    'apple core & peel': 'apple',
+    'apple peel': 'apple',
+    'apple peels': 'apple',
+    'broccoli stem': 'broccoli',
+    'broccoli stems': 'broccoli',
+    'cabbage core': 'cabbage',
+    'cauliflower core': 'cauliflower',
+    'cucumber peel': 'cucumber',
+    'cucumber peels': 'cucumber',
+    'tomato trimmings': 'tomato',
+    'leafy trimmings': 'leafy greens',
+    'bean pod': 'bean',
+    'bean pods': 'bean',
+    'corn husk': 'corn',
+  };
+
+  /// Get the base ingredient name for a scrap type
+  String _getBaseIngredient(String scrapType) {
+    final scrapLower = scrapType.toLowerCase().trim();
+    return _scrapToBaseIngredient[scrapLower] ?? scrapLower;
+  }
+
+  /// Check if user has the ingredient type available
+  Map<String, dynamic> _checkIngredientAvailability(String ingredient) {
+    // Use selected item keys if provided, otherwise use entire inventory
+    final inventory = widget.appState.inventory;
+    final selectedItemKeys = widget.selectedItemKeys?.toSet();
+    
+    print('🔍 Weight Debug: Ingredient: "$ingredient"');
+    print('🔍 Weight Debug: Selected item keys: $selectedItemKeys');
+    
+    // Calculate available weight by summing only selected matching scrap items
+    double availableWeight = 0.0;
+    final ingredientLower = ingredient.toLowerCase();
+    
+    for (final scrap in inventory) {
+      if (scrap.weightGrams == null) continue;
+      
+      final itemKey = _itemKey(scrap);
+      
+      // If selected item keys are provided, only count those specific items
+      if (selectedItemKeys != null && selectedItemKeys.isNotEmpty) {
+        if (!selectedItemKeys.contains(itemKey)) {
+          print('🔍 Weight Debug:   Skipping scrap: "$itemKey" (${scrap.weightGrams}g) - not in selected keys');
+          continue;
+        }
+        print('🔍 Weight Debug:   Including scrap: "$itemKey" (${scrap.weightGrams}g) - in selected keys');
+      } else {
+        print('🔍 Weight Debug:   Including scrap: "$itemKey" (${scrap.weightGrams}g) - no selection filter');
+      }
+      
+      final scrapLower = scrap.label.toLowerCase().trim();
+      final baseIngredient = _getBaseIngredient(scrapLower);
+      
+      // Check if scrap type matches ingredient directly
+      if (scrapLower.contains(ingredientLower) || ingredientLower.contains(scrapLower)) {
+        availableWeight += scrap.weightGrams!;
+        print('🔍 Weight Debug:     Matched (direct): +${scrap.weightGrams}g');
+      }
+      // Check if the base ingredient of the scrap matches the ingredient
+      else if (baseIngredient.contains(ingredientLower) || ingredientLower.contains(baseIngredient)) {
+        availableWeight += scrap.weightGrams!;
+        print('🔍 Weight Debug:     Matched (base): +${scrap.weightGrams}g');
+      }
+    }
+    
+    print('🔍 Weight Debug: Final weight for "$ingredient": ${availableWeight}g');
+    
+    // Get required weight from recipe if available
+    final requiredWeight = widget.recipe.ingredientWeights?[ingredient];
+    
+    return {
+      'isAvailable': availableWeight > 0,
+      'availableWeight': availableWeight,
+      'requiredWeight': requiredWeight,
+    };
   }
 
   Widget _parseInstructions(String instructions) {
@@ -190,6 +291,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     ),
                     child: Column(
                       children: widget.recipe.ingredients.map((ingredient) {
+                        final availability = _checkIngredientAvailability(ingredient);
+                        final isAvailable = availability['isAvailable'] as bool;
+                        final availableWeight = availability['availableWeight'] as double;
+                        final requiredWeight = availability['requiredWeight'] as double?;
+                        
+                        // Determine if we have enough weight
+                        final hasEnough = requiredWeight != null && availableWeight >= requiredWeight;
+                        final weightColor = hasEnough ? Colors.green : (requiredWeight != null ? Colors.orange : Colors.green);
+                        
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Row(
@@ -198,21 +308,53 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                                 width: 8,
                                 height: 8,
                                 decoration: BoxDecoration(
-                                  color: secondaryColor,
+                                  color: isAvailable ? weightColor : Colors.grey,
                                   shape: BoxShape.circle,
                                 ),
                               ),
                               const SizedBox(width: 14),
                               Expanded(
-                                child: Text(
-                                  ingredient,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                    color: textColor,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      ingredient,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w500,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                    if (isAvailable) ...[
+                                      const SizedBox(height: 4),
+                                      if (requiredWeight != null)
+                                        Text(
+                                          'Have ${availableWeight.toStringAsFixed(0)}g / Need ${requiredWeight.toStringAsFixed(0)}g',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: weightColor,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        )
+                                      else
+                                        Text(
+                                          'Available: ${availableWeight.toStringAsFixed(0)}g',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.green,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                    ],
+                                  ],
                                 ),
                               ),
+                              if (isAvailable)
+                                Icon(
+                                  hasEnough ? Icons.check_circle : Icons.warning,
+                                  color: weightColor,
+                                  size: 20,
+                                ),
                             ],
                           ),
                         );

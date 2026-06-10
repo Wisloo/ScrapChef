@@ -142,6 +142,8 @@ class _SavedRecipesScreenState extends State<SavedRecipesScreen> {
                             imageUrl: recipe.imageUrl,
                           ),
                           appState: widget.appState,
+                          selectedLabels: null,
+                          selectedItemKeys: null,
                         ),
                       ),
                     );

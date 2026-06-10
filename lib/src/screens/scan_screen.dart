@@ -9,6 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import '../state/app_state.dart';
 import '../constants/ui_constants.dart';
 import '../services/openrouter_service.dart';
+import '../services/mqtt_service.dart';
+import '../models.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key, required this.appState});
@@ -23,6 +25,27 @@ class _ScanScreenState extends State<ScanScreen> {
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedImage;
   bool _isAnalyzing = false;
+  final MqttService _mqttService = MqttService();
+  double? _currentWeight;
+  StreamSubscription<double>? _weightSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _mqttService.connect();
+    _weightSubscription = _mqttService.weightStream.listen((weight) {
+      setState(() {
+        _currentWeight = weight;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _weightSubscription?.cancel();
+    _mqttService.disconnect();
+    super.dispose();
+  }
 
   Future<void> _pickFromCamera() async {
     final image = await _picker.pickImage(
@@ -225,6 +248,31 @@ class _ScanScreenState extends State<ScanScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                // Weight display
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: UIConstants.kPrimary.withAlpha(30),
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        _currentWeight != null
+                            ? 'Weight: ${_currentWeight!.toStringAsFixed(1)}g'
+                            : 'Waiting for weight...',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
