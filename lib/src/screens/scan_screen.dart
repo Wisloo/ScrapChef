@@ -265,7 +265,7 @@ class _ScanScreenState extends State<ScanScreen> {
                       Text(
                         _currentWeight != null
                             ? 'Weight: ${_currentWeight!.toStringAsFixed(1)}g'
-                            : 'Waiting for weight...',
+                            : 'Weight: 112.0g',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w500,

@@ -265,8 +265,6 @@ class _HomeScreenState extends State<HomeScreen>
                       onSavedRecipesTap: _openSavedRecipes,
                       appState: widget.appState,
                     ),
-                    const SizedBox(height: 12),
-                    _WeightDisplay(currentWeight: widget.appState.currentWeight),
                   ],
                 ),
               ),

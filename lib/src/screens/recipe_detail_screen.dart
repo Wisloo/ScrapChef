@@ -82,6 +82,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     double availableWeight = 0.0;
     final ingredientLower = ingredient.toLowerCase();
     
+    // Extract base ingredient name (remove plurals, common words)
+    final ingredientBase = _extractBaseIngredient(ingredientLower);
+    
     for (final scrap in inventory) {
       if (scrap.weightGrams == null) continue;
       
@@ -99,15 +102,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       }
       
       final scrapLower = scrap.label.toLowerCase().trim();
-      final baseIngredient = _getBaseIngredient(scrapLower);
+      final scrapBase = _extractBaseIngredient(scrapLower);
       
       // Check if scrap type matches ingredient directly
       if (scrapLower.contains(ingredientLower) || ingredientLower.contains(scrapLower)) {
         availableWeight += scrap.weightGrams!;
         print('🔍 Weight Debug:     Matched (direct): +${scrap.weightGrams}g');
       }
-      // Check if the base ingredient of the scrap matches the ingredient
-      else if (baseIngredient.contains(ingredientLower) || ingredientLower.contains(baseIngredient)) {
+      // Check if base ingredients match (more flexible matching)
+      else if (scrapBase.contains(ingredientBase) || ingredientBase.contains(scrapBase)) {
         availableWeight += scrap.weightGrams!;
         print('🔍 Weight Debug:     Matched (base): +${scrap.weightGrams}g');
       }
@@ -123,6 +126,40 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       'availableWeight': availableWeight,
       'requiredWeight': requiredWeight,
     };
+  }
+  
+  /// Calculate overall ingredient availability count
+  Map<String, int> _calculateIngredientCount() {
+    int availableCount = 0;
+    final totalIngredients = widget.recipe.ingredients.length;
+    
+    for (final ingredient in widget.recipe.ingredients) {
+      final availability = _checkIngredientAvailability(ingredient);
+      final isAvailable = availability['isAvailable'] as bool;
+      if (isAvailable) {
+        availableCount++;
+      }
+    }
+    
+    return {
+      'availableCount': availableCount,
+      'totalCount': totalIngredients,
+    };
+  }
+  
+  /// Extract base ingredient name by removing plurals and common words
+  String _extractBaseIngredient(String ingredient) {
+    // Remove common words
+    final clean = ingredient
+        .replaceAll(RegExp(r'\b(peels|peel|skin|skins|pulp|flesh|seeds|seed|core|cores)\b'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    
+    // Remove trailing 's' for plurals (simple approach)
+    if (clean.endsWith('s') && clean.length > 2) {
+      return clean.substring(0, clean.length - 1);
+    }
+    return clean;
   }
 
   Widget _parseInstructions(String instructions) {
@@ -202,6 +239,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     final secondaryColor = Theme.of(context).colorScheme.secondary;
 
     final isSaved = widget.appState.isRecipeSaved(widget.recipe);
+    print('🏗️ [RecipeDetailScreen] Building recipe: "${widget.recipe.title}", isSaved: $isSaved');
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -269,11 +307,36 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 28),
-                  _SectionTitle(
-                    icon: Icons.shopping_basket_rounded,
-                    title: 'Ingredients',
-                    color: primaryColor,
-                    textColor: textColor,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _SectionTitle(
+                        icon: Icons.shopping_basket_rounded,
+                        title: 'Ingredients',
+                        color: primaryColor,
+                        textColor: textColor,
+                      ),
+                      Builder(
+                        builder: (context) {
+                          final count = _calculateIngredientCount();
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withAlpha(16),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${count['availableCount']}/${count['totalCount']} available',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: primaryColor,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   Container(
@@ -397,39 +460,57 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: _ActionButton(
-                          icon: isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                          label: isSaved ? 'Saved' : 'Save',
-                          color: isSaved ? secondaryColor : textColor,
-                          cardColor: cardColor,
-                          onTap: () async {
-                            if (!widget.appState.isSignedIn) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Sign in to save recipes.')),
-                              );
-                              return;
-                            }
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            try {
+                              print('💾 [Save Button] Save button clicked');
+                              print('💾 [Save Button] isSignedIn: ${widget.appState.isSignedIn}');
+                              
+                              if (!widget.appState.isSignedIn) {
+                                print('❌ [Save Button] User not signed in - showing error');
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Sign in to save recipes.')),
+                                );
+                                return;
+                              }
 
-                            await widget.appState.toggleSavedRecipe(widget.recipe);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(widget.appState.isRecipeSaved(widget.recipe) ? 'Recipe saved!' : 'Recipe removed.'),
-                                  backgroundColor: secondaryColor,
-                                ),
-                              );
+                              print('✅ [Save Button] Calling toggleSavedRecipe...');
+                              await widget.appState.toggleSavedRecipe(widget.recipe);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(widget.appState.isRecipeSaved(widget.recipe) ? 'Recipe saved!' : 'Recipe removed.'),
+                                    backgroundColor: secondaryColor,
+                                  ),
+                                );
+                              }
+                            } catch (e, stackTrace) {
+                              print('❌ [Save Button] Error: $e');
+                              print('❌ [Save Button] Stack trace: $stackTrace');
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error saving recipe: $e')),
+                                );
+                              }
                             }
                           },
+                          icon: Icon(isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded),
+                          label: Text(isSaved ? 'Saved' : 'Save'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isSaved ? secondaryColor : cardColor,
+                            foregroundColor: isSaved ? Colors.white : textColor,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              side: BorderSide(color: isSaved ? secondaryColor : textColor.withAlpha(30)),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _ActionButton(
-                          icon: Icons.note_add_rounded,
-                          label: 'Note',
-                          color: primaryColor,
-                          cardColor: cardColor,
-                          onTap: () async {
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
                             if (!widget.appState.isSignedIn) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Sign in to add notes.')),
@@ -523,6 +604,17 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                               }
                             }
                           },
+                          icon: const Icon(Icons.note_add_rounded),
+                          label: const Text('Note'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: cardColor,
+                            foregroundColor: primaryColor,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              side: BorderSide(color: primaryColor.withAlpha(30)),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -630,8 +722,12 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final textColor = UIConstants.kText;
 
-    return GestureDetector(
-      onTap: onTap,
+    return InkWell(
+      onTap: () {
+        print('🔘 [_ActionButton] onTap triggered');
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(18),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(

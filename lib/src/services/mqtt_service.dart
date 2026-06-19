@@ -17,22 +17,29 @@ class MqttService {
 
   Future<void> connect() async {
     try {
+      print('🔌 MQTT: Attempting to connect to $broker:$port');
       _client = MqttServerClient(broker, clientId);
       _client!.port = port;
-      _client!.logging(on: false);
+      _client!.logging(on: true);
       _client!.keepAlivePeriod = 30;
       _client!.onDisconnected = _onDisconnected;
       _client!.onConnected = _onConnected;
 
       await _client!.connect();
+      print('🔌 MQTT: Connection successful');
+      
+      // Manually trigger subscription after connection
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _subscribeToWeight();
+      });
     } catch (e) {
-      print('MQTT connection error: $e');
+      print('❌ MQTT connection error: $e');
       _scheduleReconnect();
     }
   }
 
   void _onConnected() {
-    print('MQTT connected');
+    print('✅ MQTT: Connected callback fired');
     _subscribeToWeight();
   }
 
@@ -43,9 +50,11 @@ class MqttService {
 
   void _subscribeToWeight() {
     if (_client == null || _client!.connectionStatus!.state != MqttConnectionState.connected) {
+      print('❌ MQTT: Cannot subscribe - client not connected');
       return;
     }
 
+    print('📡 MQTT: Subscribing to topic: $weightTopic');
     _client!.subscribe(weightTopic, MqttQos.atMostOnce);
 
     _client!.updates!.listen((List<MqttReceivedMessage<MqttMessage?>> events) {
@@ -54,11 +63,15 @@ class MqttService {
 
       if (message != null && message is MqttPublishMessage) {
         final payload = MqttPublishPayload.bytesToStringAsString(message.payload.message);
+        print('📡 MQTT: Message received on topic: ${event.topic}');
+        print('📡 MQTT: Payload: $payload');
         final weight = double.tryParse(payload);
         if (weight != null) {
           _currentWeight = weight;
           _weightController.add(weight);
-          print('Weight received: $weight g');
+          print('✅ Weight received: $weight g');
+        } else {
+          print('❌ MQTT: Failed to parse weight from payload: $payload');
         }
       }
     });

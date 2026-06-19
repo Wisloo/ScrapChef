@@ -155,15 +155,22 @@ OpenRouterService get classifierService => _classifierService;
   }
 
   Future<void> toggleSavedRecipe(RecipeSuggestion recipe, {String? notes}) async {
+    print('💾 [toggleSavedRecipe] Attempting to save recipe: "${recipe.title}"');
+    print('💾 [toggleSavedRecipe] User signed in: $isSignedIn, email: $currentUserEmail');
+    
     if (!isSignedIn || currentUserEmail == null) {
+      print('❌ [toggleSavedRecipe] User not signed in - cannot save recipe');
       throw Exception('Sign in first to save recipes.');
     }
 
     final existingIndex = _savedRecipes.indexWhere((saved) => saved.recipeId == recipe.stableId);
     if (existingIndex >= 0) {
+      print('🗑️ [toggleSavedRecipe] Recipe already saved - removing');
       _savedRecipes.removeAt(existingIndex);
       await _recipeStore.deleteRecipe(currentUserEmail!, recipe.stableId);
+      print('✅ [toggleSavedRecipe] Recipe removed from Firebase');
     } else {
+      print('➕ [toggleSavedRecipe] Saving new recipe');
       final record = SavedRecipeRecord(
         recipeId: recipe.stableId,
         title: recipe.title,
@@ -177,6 +184,7 @@ OpenRouterService get classifierService => _classifierService;
       );
       _savedRecipes.insert(0, record);
       await _recipeStore.upsertRecipe(currentUserEmail!, record);
+      print('✅ [toggleSavedRecipe] Recipe saved to Firebase');
     }
 
     notifyListeners();
@@ -489,11 +497,17 @@ OpenRouterService get classifierService => _classifierService;
     final normalizedLabel = label.toLowerCase().trim();
     final now = DateTime.now();
     
+    // Set default weight to 112g if not provided (for demo/video without IoT device)
+    final finalWeightGrams = weightGrams ?? 112.0;
+    
+    print('💾 [_logItem] Attempting to save: label="$label", source="$source", weight=$finalWeightGrams');
+    print('💾 [_logItem] User signed in: ${_authService.isSignedIn}, userId: ${_authService.userId}');
+    
     if (_recentlyAddedItems.containsKey(normalizedLabel)) {
       final lastAdded = _recentlyAddedItems[normalizedLabel]!;
       final timeSinceLastAdd = now.difference(lastAdded);
       if (timeSinceLastAdd.inSeconds < 5) {
-        print('[_logItem] Skipping duplicate item: label="$label" was added ${timeSinceLastAdd.inSeconds} seconds ago');
+        print('⚠️ [_logItem] Skipping duplicate item: label="$label" was added ${timeSinceLastAdd.inSeconds} seconds ago');
         return;
       }
     }
@@ -504,21 +518,27 @@ OpenRouterService get classifierService => _classifierService;
     final scrap = ScrapItem(
       id: scrapId,
       label: label,
-      weightGrams: weightGrams,
+      weightGrams: finalWeightGrams,
       loggedAt: now,
       source: source,
       confidence: confidence,
       manualCorrection: manualCorrection,
     );
     _inventory.insert(0, scrap);
+    print('✅ [_logItem] Added to local inventory. Total items: ${_inventory.length}');
     
     _recentlyAddedItems[normalizedLabel] = now;
     _recentlyAddedItems.removeWhere((key, value) => now.difference(value).inSeconds > 10);
 
     if (_authService.isSignedIn && _authService.userId != null) {
-      _scrapStore.saveScrap(_authService.userId!, scrap).catchError((e) {
-        print('Failed to save scrap to Firebase: $e');
+      print('💾 [_logItem] Saving to Firebase...');
+      _scrapStore.saveScrap(_authService.userId!, scrap).then((_) {
+        print('✅ [_logItem] Saved to Firebase successfully');
+      }).catchError((e) {
+        print('❌ [_logItem] Failed to save scrap to Firebase: $e');
       });
+    } else {
+      print('⚠️ [_logItem] Not saving to Firebase - user not signed in');
     }
   }
 }
